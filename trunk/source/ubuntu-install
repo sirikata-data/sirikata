@@ -49,7 +49,7 @@ fi
 #######################################
 
 
-if apt-cache show libfreeimge-dev | grep 3\\.9 || ! apt-cache show libfreeimage-dev; then
+if apt-cache show libfreeimage-dev | grep 3\\.9 || ! apt-cache show libfreeimage-dev; then
 echo "Installing FreeImage..."
 su -c "yes A|unzip ${dir}/FreeImage3100.zip -d $dir" - $usr
 su -c "cd ${dir};cd FreeImage;patch -p1 < ../FreeImage64bit.patch;make $NUMPROCS;" - $usr
