@@ -1,0 +1,33 @@
+diff -r -u FreeImage/Source/FreeImage/PluginBMP.cpp FreeImage_patched/Source/FreeImage/PluginBMP.cpp
+--- FreeImage/Source/FreeImage/PluginBMP.cpp	2007-10-21 16:50:08.000000000 -0700
++++ FreeImage_patched/Source/FreeImage/PluginBMP.cpp	2008-04-29 16:00:15.000000000 -0700
+@@ -224,7 +224,7 @@
+ 				throw(1);
+ 			}
+ 			if (status_byte != 0)	{
+-				status_byte = MIN(status_byte, end - q);
++				status_byte = MIN((long int)status_byte, (long int)(end - q));
+ 				// Encoded mode
+ 				if(io->read_proc(&second_byte, sizeof(BYTE), 1, handle) != 1) {
+ 					throw(1);
+@@ -279,7 +279,7 @@
+ 					default:
+ 					{
+ 						// Absolute mode
+-						status_byte = MIN(status_byte, end - q);
++						status_byte = MIN((long int)status_byte, (long int)(end - q));
+ 						for (int i = 0; i < status_byte; i++) {
+ 							if ((i & 0x01) == 0) {
+ 								if(io->read_proc(&second_byte, sizeof(BYTE), 1, handle) != 1) {
+diff -r -u FreeImage/Source/Metadata/Exif.cpp FreeImage_patched/Source/Metadata/Exif.cpp
+--- FreeImage/Source/Metadata/Exif.cpp	2007-07-17 03:28:26.000000000 -0700
++++ FreeImage_patched/Source/Metadata/Exif.cpp	2008-04-29 16:05:47.000000000 -0700
+@@ -495,7 +495,7 @@
+ 		}
+ 
+ 		// remember that we've visited this directory so that we don't visit it again later
+-		DWORD visited = (((DWORD)ifdp & 0xFFFF) << 16) | (DWORD)de;
++		DWORD visited = (((DWORD)((long int)ifdp & (long int)0xFFFF)) << 16) | (DWORD)de;
+ 		if(visitedIFD.find(visited) != visitedIFD.end()) {
+ 			continue;
+ 		} else {
