@@ -1,0 +1,99 @@
+diff --git a/autogen.sh b/autogen.sh
+index ca7488b..34a4d2e 100755
+--- a/autogen.sh
++++ b/autogen.sh
+@@ -17,10 +17,10 @@ set -ex
+ 
+ rm -rf autom4te.cache
+ 
+-aclocal-1.10 --force -I m4
++aclocal-1.9 --force -I m4
+ libtoolize -c -f
+ autoheader -f -W all
+-automake-1.10 --foreign -a -c -f -W all
++automake-1.9 --foreign -a -c -f -W all
+ autoconf -f -W all,no-obsolete
+ 
+ rm -rf autom4te.cache config.h.in~
+diff --git a/csharp/Makefile.am b/csharp/Makefile.am
+index f8ec01a..595ad1d 100644
+--- a/csharp/Makefile.am
++++ b/csharp/Makefile.am
+@@ -13,40 +13,58 @@ Google.ProtocolBuffers.dll_sources = \
+ 	$(srcdir)/ProtocolBuffers/Collections/Dictionaries.cs		\
+ 	$(srcdir)/ProtocolBuffers/Collections/Lists.cs			\
+ 	$(srcdir)/ProtocolBuffers/Collections/ReadOnlyDictionary.cs	\
+-	$(srcdir)/ProtocolBuffers/DescriptorProtos/DescriptorProtoFile.cs \
+-	$(srcdir)/ProtocolBuffers/DescriptorProtos/IDescriptorProto.cs  \
+-	$(srcdir)/ProtocolBuffers/DescriptorProtos/PartialClasses.cs    \
++	$(srcdir)/ProtocolBuffers/DescriptorProtos/DescriptorProtoFile.cs	\
++	$(srcdir)/ProtocolBuffers/DescriptorProtos/IDescriptorProto.cs	\
++	$(srcdir)/ProtocolBuffers/DescriptorProtos/PartialClasses.cs	\
+ 	$(srcdir)/ProtocolBuffers/Descriptors/DescriptorBase.cs		\
+ 	$(srcdir)/ProtocolBuffers/Descriptors/DescriptorPool.cs		\
+ 	$(srcdir)/ProtocolBuffers/Descriptors/DescriptorUtil.cs		\
+-	$(srcdir)/ProtocolBuffers/Descriptors/DescriptorValidationException.cs		\
++	$(srcdir)/ProtocolBuffers/Descriptors/DescriptorValidationException.cs	\
+ 	$(srcdir)/ProtocolBuffers/Descriptors/EnumDescriptor.cs		\
+-	$(srcdir)/ProtocolBuffers/Descriptors/EnumDescriptorIndexAttribute.cs		\
+ 	$(srcdir)/ProtocolBuffers/Descriptors/EnumValueDescriptor.cs	\
+ 	$(srcdir)/ProtocolBuffers/Descriptors/FieldDescriptor.cs	\
+ 	$(srcdir)/ProtocolBuffers/Descriptors/FieldMappingAttribute.cs	\
+ 	$(srcdir)/ProtocolBuffers/Descriptors/FieldType.cs		\
+ 	$(srcdir)/ProtocolBuffers/Descriptors/FileDescriptor.cs		\
++	$(srcdir)/ProtocolBuffers/Descriptors/IDescriptor.cs		\
+ 	$(srcdir)/ProtocolBuffers/Descriptors/IndexedDescriptorBase.cs	\
+ 	$(srcdir)/ProtocolBuffers/Descriptors/MappedType.cs		\
+-	$(srcdir)/ProtocolBuffers/Descriptors/MethodDescriptor.cs	\
+ 	$(srcdir)/ProtocolBuffers/Descriptors/MessageDescriptor.cs	\
++	$(srcdir)/ProtocolBuffers/Descriptors/MethodDescriptor.cs	\
+ 	$(srcdir)/ProtocolBuffers/Descriptors/PackageDescriptor.cs	\
+ 	$(srcdir)/ProtocolBuffers/Descriptors/ServiceDescriptor.cs	\
++	$(srcdir)/ProtocolBuffers/DynamicMessage.cs			\
++	$(srcdir)/ProtocolBuffers/ExtendableBuilder.cs			\
++	$(srcdir)/ProtocolBuffers/ExtendableMessage.cs			\
+ 	$(srcdir)/ProtocolBuffers/ExtensionInfo.cs			\
+ 	$(srcdir)/ProtocolBuffers/ExtensionRegistry.cs			\
+ 	$(srcdir)/ProtocolBuffers/FieldAccess/Delegates.cs		\
+-	$(srcdir)/ProtocolBuffers/FieldAccess/FieldAccessorTable.cs	\
++	$(srcdir)/ProtocolBuffers/FieldAccess/ReflectionUtil.cs		\
++	$(srcdir)/ProtocolBuffers/FieldAccess/SingleEnumAccessor.cs	\
++	$(srcdir)/ProtocolBuffers/FieldAccess/SingleMessageAccessor.cs	\
++	$(srcdir)/ProtocolBuffers/FieldAccess/SinglePrimitiveAccessor.cs	\
++	$(srcdir)/ProtocolBuffers/FieldAccess/RepeatedPrimitiveAccessor.cs	\
++	$(srcdir)/ProtocolBuffers/FieldAccess/RepeatedEnumAccessor.cs	\
+ 	$(srcdir)/ProtocolBuffers/FieldAccess/IFieldAccessor.cs		\
++	$(srcdir)/ProtocolBuffers/FieldAccess/FieldAccessorTable.cs	\
++	$(srcdir)/ProtocolBuffers/FieldAccess/RepeatedMessageAccessor.cs	\
+ 	$(srcdir)/ProtocolBuffers/FieldSet.cs				\
+ 	$(srcdir)/ProtocolBuffers/GeneratedBuilder.cs			\
+-	$(srcdir)/ProtocolBuffers/GeneratedExtension.cs			\
++	$(srcdir)/ProtocolBuffers/GeneratedSingleExtension.cs		\
+ 	$(srcdir)/ProtocolBuffers/GeneratedMessage.cs			\
++	$(srcdir)/ProtocolBuffers/GeneratedRepeatException.cs		\
+ 	$(srcdir)/ProtocolBuffers/IBuilder.cs				\
++	$(srcdir)/ProtocolBuffers/GeneratedExtensionBase.cs		\
+ 	$(srcdir)/ProtocolBuffers/IMessage.cs				\
+ 	$(srcdir)/ProtocolBuffers/InvalidProtocolBufferException.cs	\
++	$(srcdir)/ProtocolBuffers/IRpcChannel.cs			\
++	$(srcdir)/ProtocolBuffers/IRpcController.cs			\
++	$(srcdir)/ProtocolBuffers/IService.cs				\
+ 	$(srcdir)/ProtocolBuffers/Properties/AssemblyInfo.cs		\
++	$(srcdir)/ProtocolBuffers/RpcUtil.cs				\
+ 	$(srcdir)/ProtocolBuffers/TextFormat.cs				\
++	$(srcdir)/ProtocolBuffers/TextGenerator.cs			\
++	$(srcdir)/ProtocolBuffers/TextTokenizer.cs			\
+ 	$(srcdir)/ProtocolBuffers/UninitializedMessageException.cs	\
+ 	$(srcdir)/ProtocolBuffers/UnknownField.cs			\
+ 	$(srcdir)/ProtocolBuffers/UnknownFieldSet.cs			\
+@@ -54,8 +72,8 @@ Google.ProtocolBuffers.dll_sources = \
+ 
+ Google.ProtocolBuffers.dll: $(Google.ProtocolBuffers.dll_sources)
+ 	cp $(srcdir)/ProtocolBuffers/Properties/Google.ProtocolBuffers.snk .
+-	gmcs -codepage:utf8 -debug -target:library -out:Google.ProtocolBuffers.dll \
+-        $(Google.ProtocolBuffers.dll_sources) -keyfile:Google.ProtocolBuffers.snk
++	smcs -codepage:utf8 -debug -target:library -out:Google.ProtocolBuffers.dll \
++        $(Google.ProtocolBuffers.dll_sources) -keyfile:Google.ProtocolBuffers.snk -r:System.dll
+ 
+ install-data-local: Google.ProtocolBuffers.dll
+ 	gacutil -i Google.ProtocolBuffers.dll -package google
