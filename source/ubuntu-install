@@ -33,7 +33,7 @@ apt-get install unzip zip automake1.9 nvidia-cg-toolkit jam libcurl4-openssl-dev
 #######################################
 # Install Boost 1.35                  #
 #######################################
-if apt-get install libboost-system1.39-dev || libboost-system1.38-dev || apt-get install libboost-system1.37-dev || apt-get install libboost-system1.36-dev; then
+if apt-get install libboost-system1.39-dev || apt-get install libboost-system1.38-dev || apt-get install libboost-system1.37-dev || apt-get install libboost-system1.36-dev; then
 apt-get install libboost-program_options1.39-dev || apt-get install libboost-program_options1.38-dev || apt-get install libboost-program_options1.37-dev || apt-get install libboost-program_options1.36-dev
 apt-get install libboost-thread1.39-dev || apt-get install libboost-thread1.38-dev || apt-get install libboost-thread1.37-dev || apt-get install libboost-thread1.36-dev
 else
