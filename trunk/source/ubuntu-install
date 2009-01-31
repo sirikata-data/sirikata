@@ -38,7 +38,7 @@ apt-get install libboost-program_options1.39-dev || apt-get install libboost-pro
 apt-get install libboost-thread1.39-dev || apt-get install libboost-thread1.38-dev || apt-get install libboost-thread1.37-dev || apt-get install libboost-thread1.36-dev
 else
 echo $NUMPROCS
-tar -zxf boost_1_37_0.tar.gz
+tar -jxf boost_1_37_0.tar.bz2
 su -c "cd ${dir}/boost_1_37_0;./configure; cat Makefile |sed -e s/LIBS=$/LIBS=$NUMPROCS/ > Makefilej6 ;make $NUMPROCS -f Makefilej6" - $usr
 cd boost_1_37_0
 make install
