@@ -204,8 +204,8 @@ else
     user_eval "cd ${DIR};
                tar -zxf dotnet-protobufs.f0b299db576712173d00cacf0fd7c7583eb8ed25.tar.gz;
                cd dotnet-protobufs;
-               patch -F 0 -p1 < ../protobufs_patches/build_fix.patch;
-               patch -F 0 -p1 < ../protobufs_patches/csharp_generator_generic_namespace_alias.patch;
+               patch -p1 < ../protobufs_patches/build_fix.patch;
+               patch -p1 < ../protobufs_patches/csharp_generator_generic_namespace_alias.patch;
                ./autogen.sh;
                ./configure --prefix=${DIR};
                make $NUM_PROCS;
