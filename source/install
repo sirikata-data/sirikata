@@ -1,0 +1,221 @@
+#!/bin/bash
+
+################################################################################################################################
+# Initialize variables
+################################################################################################################################
+
+USE_ROOT=false
+USER=`whoami`
+SAME_USER=true
+NUM_PROCS=-j2
+DIR=`pwd`
+
+
+################################################################################################################################
+# Parse command-line arguments
+################################################################################################################################
+
+until [ -z "$1" ]  # until all parameters used up
+do
+  case "$1" in
+      --use-root ) USE_ROOT=true ;;
+      --user )
+          shift
+          USER="$1"
+          ;;
+      -j* ) NUM_PROCS="$1" ;;
+      --installed-boost )
+          shift
+          INSTALLED_BOOST="$1"
+          ;;
+      --installed-freeimage )
+          shift
+          INSTALLED_FREEIMAGE="$1"
+          ;;
+      --installed-curl )
+          shift
+          INSTALLED_CURL="$1"
+          ;;
+      --installed-protobufs )
+          shift
+          INSTALLED_PROTOBUFS="$1"
+          ;;
+      --help )
+          echo "
+Usage: $0 [--use-root] [--user <username>] [-j<num-procs>]
+           [--installed-boost <path>]
+           [--installed-freeimage <path>]
+           [--installed-curl <path>]
+           [--installed-protobufs <path>]
+
+You must run the script with root privileges (sudo) if you specify --use-root.
+$0 --help displays this help message.
+"
+          exit
+          ;;
+  esac
+  shift
+done
+
+
+################################################################################################################################
+# Check for superuser
+################################################################################################################################
+
+if $USE_ROOT ; then
+    while test $UID != "0" ; do
+        echo "
+Please run this script with root privileges when you specify --use-root.
+Type $0 --help to see a list of all options.
+"
+        exit;
+    done
+fi
+
+
+################################################################################################################################
+# Check for distro
+################################################################################################################################
+
+if $USE_ROOT ; then
+    if [[ -n `which apt-get` ]] ; then
+        DISTRO=debian
+    else
+        # TODO: Replace with message listing packages that should be installed as root, as per Patrick's suggestion
+        echo "Installing as root is not supported on your distribution."
+        exit
+    fi
+fi
+
+
+################################################################################################################################
+# Install support packages
+################################################################################################################################
+
+if $USE_ROOT ; then
+     case "$DISTRO" in
+       debian )
+           apt-get install unzip zip automake1.9 nvidia-cg-toolkit jam g++ libzzip-dev libxt-dev libxaw7-dev libxxf86vm-dev \
+                           libxrandr-dev libfreetype6-dev autoconf libtool libpcre3-dev flex bison patch libbz2-dev gawk
+           ;;
+     esac
+fi
+
+
+################################################################################################################################
+# Check if the user runnning the script is the the same as the one specified on the command line
+################################################################################################################################
+
+if [[ $USER != `whoami` ]] ; then
+    SAME_USER=false
+fi
+
+
+################################################################################################################################
+# Define a function to execute a command as a different user if necessary
+################################################################################################################################
+
+function user_eval {
+    if $SAME_USER ; then
+        eval $1
+    else
+        su -c "$1" - $USER
+    fi
+}
+
+
+################################################################################################################################
+# Define a function to make a symlink to an existing installation
+################################################################################################################################
+
+function make_symlink {
+    TARGET=$1
+    LINK_NAME=$2
+
+    user_eval "cd ${DIR}; rm -f $LINK_NAME; ln -s $TARGET $LINK_NAME"
+}
+
+
+################################################################################################################################
+# Install Boost
+################################################################################################################################
+
+echo "Installing Boost..."
+BOOST_INSTALLED=false
+if [[ -n "$INSTALLED_BOOST" ]] ; then
+    make_symlink $INSTALLED_BOOST installed-boost
+    BOOST_INSTALLED=true
+elif $USE_ROOT ; then
+    case "$DISTRO" in
+        debian )
+            if (apt-get install libboost-system1.39-dev || apt-get install libboost-system1.38-dev || apt-get install libboost-system1.37-dev || apt-get install libboost-system1.36-dev) ; then
+                apt-get install libboost-program_options1.39-dev || apt-get install libboost-program_options1.38-dev || apt-get install libboost-program_options1.37-dev || apt-get install libboost-program_options1.36-dev
+                apt-get install libboost-thread1.39-dev || apt-get install libboost-thread1.38-dev || apt-get install libboost-thread1.37-dev || apt-get install libboost-thread1.36-dev
+                BOOST_INSTALLED=true
+            fi
+            ;;
+    esac
+fi
+
+if ! $BOOST_INSTALLED ; then
+    user_eval "cd ${DIR};
+               tar -jxf boost_1_37_0.tar.bz2;
+               cd boost_1_37_0;
+               ./configure --prefix=${DIR};
+               cat Makefile | sed -e s/LIBS=$/LIBS=$NUM_PROCS/ > Makefile_multiproc;
+               make $NUM_PROCS -f Makefile_multiproc;
+               make install;
+               cd .."
+fi
+
+
+################################################################################################################################
+# Install CURL
+################################################################################################################################
+
+echo "Installing CURL..."
+CURL_INSTALLED=false
+if [[ -n "$INSTALLED_CURL" ]] ; then
+    make_symlink $INSTALLED_CURL installed-curl
+    CURL_INSTALLED=true
+elif $USE_ROOT ; then
+    case "$DISTRO" in
+        debian )
+            apt-get install libcurl4-openssl-dev
+            CURL_INSTALLED=true
+            ;;
+    esac
+fi
+
+if ! $CURL_INSTALLED ; then
+    echo "Could not install CURL"
+    exit
+fi
+
+
+################################################################################################################################
+# Install DotNet-Protobufs
+################################################################################################################################
+
+echo "Installing DotNet-Protobufs..."
+if [[ -n "$INSTALLED_PROTOBUFS" ]] ; then
+    make_symlink $INSTALLED_PROTOBUFS installed-protobufs
+else
+    user_eval "cd ${DIR};
+               tar -zxf dotnet-protobufs.f0b299db576712173d00cacf0fd7c7583eb8ed25.tar.gz;
+               cd dotnet-protobufs;
+               patch -F 0 -p1 < ../protobufs_patches/build_fix.patch;
+               patch -F 0 -p1 < ../protobufs_patches/csharp_generator_generic_namespace_alias.patch;
+               ./autogen.sh;
+               ./configure --prefix=${DIR};
+               make $NUM_PROCS;
+               make install;
+               cd .."
+fi
+
+
+################################################################################################################################
+# Finish
+################################################################################################################################
+
+echo "Installation complete"
