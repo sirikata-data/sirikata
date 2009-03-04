@@ -1,0 +1,31 @@
+Index: acinclude.m4
+===================================================================
+--- acinclude.m4	(revision 8109)
++++ acinclude.m4	(working copy)
+@@ -509,7 +509,7 @@
+     AC_CANONICAL_BUILD
+ 	if test "x$want_boost" = "xyes"; then
+         AC_REQUIRE([AC_PROG_CC])
+-		boost_lib_version_req=ifelse([$1], ,1.31.0,$1)
++		boost_lib_version_req=ifelse([$1], ,1.37.0,$1)
+ 		boost_lib_version_req_shorten=`expr $boost_lib_version_req : '\([[0-9]]*\.[[0-9]]*\)'`
+ 		boost_lib_version_req_major=`expr $boost_lib_version_req : '\([[0-9]]*\)'`
+ 		boost_lib_version_req_minor=`expr $boost_lib_version_req : '[[0-9]]*\.\([[0-9]]*\)'`
+@@ -528,7 +528,7 @@
+ 			BOOST_LDFLAGS="-L$ac_boost_path/lib"
+ 			BOOST_CPPFLAGS="-I$ac_boost_path/include"
+ 		else
+-			for ac_boost_path_tmp in /usr /usr/local /opt ; do
++			for ac_boost_path_tmp in /usr/local /usr /opt ; do
+ 				if test -d "$ac_boost_path_tmp/include/boost" && test -r "$ac_boost_path_tmp/include/boost"; then
+ 					BOOST_LDFLAGS="-L$ac_boost_path_tmp/lib"
+ 					BOOST_CPPFLAGS="-I$ac_boost_path_tmp/include"
+@@ -584,7 +584,7 @@
+ 					done
+ 				fi
+ 			else
+-				for ac_boost_path in /usr /usr/local /opt ; do
++				for ac_boost_path in /usr/local /usr /opt ; do
+ 					if test -d "$ac_boost_path" && test -r "$ac_boost_path"; then
+ 						for i in `ls -d $ac_boost_path/include/boost-* 2>/dev/null`; do
+ 							_version_tmp=`echo $i | sed "s#$ac_boost_path##" | sed 's/\/include\/boost-//' | sed 's/_/./'`

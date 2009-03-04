@@ -40,6 +40,14 @@ do
           shift
           INSTALLED_PROTOBUFS="$1"
           ;;
+      --installed-ois )
+          shift
+          INSTALLED_OIS="$1"
+          ;;
+      --installed-ogre )
+          shift
+          INSTALLED_OGRE="$1"
+          ;;
       --help )
           echo "
 Usage: $0 [--use-root] [--user <username>] [-j<num-procs>]
@@ -47,6 +55,8 @@ Usage: $0 [--use-root] [--user <username>] [-j<num-procs>]
            [--installed-freeimage <path>]
            [--installed-curl <path>]
            [--installed-protobufs <path>]
+           [--installed-ogre <path>]
+           [--installed-ois <path>]
 
 You must run the script with root privileges (sudo) if you specify --use-root.
 $0 --help displays this help message.
@@ -142,6 +152,7 @@ function make_symlink {
 
 echo "Installing Boost..."
 BOOST_INSTALLED=false
+PREFIX_BOOST=true
 if [[ -n "$INSTALLED_BOOST" ]] ; then
     make_symlink $INSTALLED_BOOST installed-boost
     BOOST_INSTALLED=true
@@ -152,6 +163,7 @@ elif $USE_ROOT ; then
                 apt-get install libboost-program_options1.39-dev || apt-get install libboost-program_options1.38-dev || apt-get install libboost-program_options1.37-dev || apt-get install libboost-program_options1.36-dev
                 apt-get install libboost-thread1.39-dev || apt-get install libboost-thread1.38-dev || apt-get install libboost-thread1.37-dev || apt-get install libboost-thread1.36-dev
                 BOOST_INSTALLED=true
+                PREFIX_BOOST=false
             fi
             ;;
     esac
@@ -214,6 +226,59 @@ else
 fi
 
 
+################################################################################################################################
+# Install OIS
+################################################################################################################################
+
+echo "Installing OIS..."
+OIS_INSTALLED=false
+if [[ -n "$INSTALLED_OIS" ]] ; then
+    make_symlink $INSTALLED_OIS installed-ois
+    OIS_INSTALLED=true
+fi
+
+if ! $OIS_INSTALLED ; then
+    user_eval "cd ${DIR};
+               tar -zxf ois_1.2.0.tar.gz;
+               cd ois;
+               ./configure --prefix=${DIR};
+               make $NUM_PROCS;
+               make install;
+               cd .."
+fi
+
+################################################################################################################################
+# Install Ogre
+################################################################################################################################
+
+echo "Installing Ogre..."
+OGRE_INSTALLED=false
+if [[ -n "$INSTALLED_OGRE" ]] ; then
+    make_symlink $INSTALLED_OGRE installed-ogre
+    OGRE_INSTALLED=true
+fi
+
+if ! $OGRE_INSTALLED ; then
+if ! $PREFIX_BOOST ; then
+    user_eval "cd ${DIR};
+               tar -jxf ogre-v1-6-1.tar.bz2;
+               cd ogre;
+               patch -p0 < ../ogre.patch;
+               ./configure --enable-threading=semi --prefix=${DIR};
+               make $NUM_PROCS;
+               make install;
+               cd .."
+else
+    user_eval "cd ${DIR};
+               tar -jxf ogre-v1-6-1.tar.bz2;
+               cd ogre;
+               patch -p0 < ../ogre.patch;
+               ./configure --with-boost=${DIR} --enable-threading=semi --prefix=${DIR};
+               make $NUM_PROCS;
+               make install;
+               cd .."
+fi
+fi
 ################################################################################################################################
 # Finish
 ################################################################################################################################
