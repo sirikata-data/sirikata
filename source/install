@@ -241,6 +241,7 @@ if ! $OIS_INSTALLED ; then
     user_eval "cd ${DIR};
                tar -zxf ois_1.2.0.tar.gz;
                cd ois;
+               ./bootstrap
                ./configure --prefix=${DIR};
                make $NUM_PROCS;
                make install;
