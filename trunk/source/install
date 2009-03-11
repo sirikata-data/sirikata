@@ -265,6 +265,7 @@ if ! $PREFIX_BOOST ; then
                tar -jxf ogre-v1-6-1.tar.bz2;
                cd ogre;
                patch -p0 < ../ogre.patch;
+               ./bootstrap;
                ./configure --enable-threading=semi --prefix=${DIR};
                make $NUM_PROCS;
                make install;
@@ -274,6 +275,7 @@ else
                tar -jxf ogre-v1-6-1.tar.bz2;
                cd ogre;
                patch -p0 < ../ogre.patch;
+               ./bootstrap;
                ./configure --with-boost=${DIR} --enable-threading=semi --prefix=${DIR};
                make $NUM_PROCS;
                make install;
