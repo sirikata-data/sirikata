@@ -200,8 +200,10 @@ elif $USE_ROOT ; then
 fi
 
 if ! $CURL_INSTALLED ; then
-    echo "Could not install CURL"
-    exit
+    make_symlink /usr installed-curl
+    CURL_INSTALLED=true
+    #echo "Could not install CURL"
+    #exit
 fi
 
 
