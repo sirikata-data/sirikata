@@ -1,0 +1,13 @@
+Only in .: dotnetNewListFixForf0b299db576712173d00cacf0fd7c7583eb8ed25.patch
+diff -u -r ./src/google/protobuf/compiler/csharp/csharp_message_field.cc ../dotnet-protobufs.bak/src/google/protobuf/compiler/csharp/csharp_message_field.cc
+--- ./src/google/protobuf/compiler/csharp/csharp_message_field.cc	2009-04-12 17:49:07.000000000 -0700
++++ ../dotnet-protobufs.bak/src/google/protobuf/compiler/csharp/csharp_message_field.cc	2009-03-31 23:51:21.000000000 -0700
+@@ -175,7 +175,7 @@
+ void RepeatedMessageFieldGenerator::
+ GenerateMembers(io::Printer* printer) const {
+   printer->Print(variables_,
+-    "private pbc::PopsicleList<$type$> $name$_ = new global::Google.ProtocolBuffers.Collections.Lists<$type$>.Empty;\r\n"
++    "private pbc::PopsicleList<$type$> $name$_ = new pbc::PopsicleList<$type$>();\r\n"
+     "public scg::IList<$type$> $capitalized_name$List {\r\n"
+     "  get { return $name$_; } \r\n"   // Will be unmodifiable by the time it's exposed
+     "}\r\n"

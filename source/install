@@ -231,26 +231,6 @@ if ! $CURL_INSTALLED ; then
 fi
 
 
-################################################################################################################################
-# Install DotNet-Protobufs
-################################################################################################################################
-
-echo "Installing DotNet-Protobufs..."
-if [[ -n "$INSTALLED_PROTOBUFS" ]] ; then
-    make_symlink $INSTALLED_PROTOBUFS installed-protobufs
-else
-    user_eval "cd ${DIR};
-               tar -zxf dotnet-protobufs.f0b299db576712173d00cacf0fd7c7583eb8ed25.tar.gz;
-               cd dotnet-protobufs;
-               patch -p1 < ../protobufs_patches/build_fix.patch;
-               patch -p1 < ../protobufs_patches/csharp_generator_generic_namespace_alias.patch;
-               ./autogen.sh;
-               ./configure --prefix=${DIR};
-               make $NUM_PROCS;
-               make install;
-               cd .."
-fi
-
 
 ################################################################################################################################
 # Install OIS
@@ -308,6 +288,52 @@ else
                cd .."
 fi
 fi
+
+################################################################################################################################
+# Install Mono
+################################################################################################################################
+
+echo "Installing MONO..."
+MONO_INSTALLED=false
+if [[ -n "$INSTALLED_MONO" ]] ; then
+    make_symlink $INSTALLED_MONO installed-mono
+    MONO_INSTALLED=true
+fi
+
+if ! $MONO_INSTALLED ; then
+    user_eval "cd ${DIR};
+               tar -jxf mono-basic-2.4.tar.bz2;
+               cd mono-2.4;
+               ./configure --prefix=${DIR}/installed-mono;
+               make $NUM_PROCS;
+               make install;
+               cd .."
+fi
+
+
+################################################################################################################################
+# Install DotNet-Protobufs
+################################################################################################################################
+
+echo "Installing DotNet-Protobufs..."
+if [[ -n "$INSTALLED_PROTOBUFS" ]] ; then
+    make_symlink $INSTALLED_PROTOBUFS installed-protobufs
+else
+    user_eval "cd ${DIR};
+               tar -zxf dotnet-protobufs.f0b299db576712173d00cacf0fd7c7583eb8ed25.tar.gz;
+               cd dotnet-protobufs;
+               patch -p1 -N < ../protobufs_patches/build_fix.patch;
+               patch -p1 -N < ../protobufs_patches/csharp_generator_generic_namespace_alias.patch;
+               patch -p0 -N < ../protobufs_patches/new_list_empty.patch;
+               mkdir ${DIR}/lib >& /dev/null || touch ${DIR}/lib
+               find csharp/ProtocolBuffers -name *.cs |xargs ../installed-mono/bin/gmcs -target:library -out:${DIR}/lib/Google.ProtocolBuffers.dll
+               ./autogen.sh;
+               ./configure --prefix=${DIR};
+               make $NUM_PROCS;
+               make install;
+               cd .."
+fi
+
 ################################################################################################################################
 # Finish
 ################################################################################################################################
