@@ -325,8 +325,8 @@ else
                patch -p1 -N < ../protobufs_patches/build_fix.patch;
                patch -p1 -N < ../protobufs_patches/csharp_generator_generic_namespace_alias.patch;
                patch -p0 -N < ../protobufs_patches/new_list_empty.patch;
-               mkdir ${DIR}/lib >& /dev/null || touch ${DIR}/lib
-               find csharp/ProtocolBuffers -name *.cs |xargs ../installed-mono/bin/gmcs -target:library -out:${DIR}/lib/Google.ProtocolBuffers.dll
+               mkdir ${DIR}/lib >& /dev/null || touch ${DIR}/lib ;
+               find csharp/ProtocolBuffers -name *.cs |xargs ../installed-mono/bin/gmcs -target:library -out:${DIR}/lib/Google.ProtocolBuffers.dll ;
                ./autogen.sh;
                ./configure --prefix=${DIR};
                make $NUM_PROCS;
