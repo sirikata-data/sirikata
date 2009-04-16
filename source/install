@@ -320,7 +320,7 @@ fi
 
 if ! $MONO_INSTALLED ; then
     user_eval "cd ${DIR};
-               tar -jxf mono-basic-2.4.tar.bz2;
+               tar -jxf mono-2.4.tar.bz2;
                cd mono-2.4;
                ./configure --prefix=${DIR}/installed-mono;
                make $NUM_PROCS;
