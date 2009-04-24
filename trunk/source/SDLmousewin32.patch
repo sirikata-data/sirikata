@@ -1,0 +1,18 @@
+--- src/video/win32/SDL_win32window.c	2009-03-16 20:44:52.000000000 -0700
++++ ../../SDL-1.3.0-4460/src/video/win32/SDL_win32window.c	2009-04-23 23:27:24.000000000 -0700
+@@ -292,6 +292,15 @@
+     if (SetupWindowData(_this, window, hwnd, SDL_FALSE) < 0) {
+         return -1;
+     }
++    {
++        RAWINPUTDEVICE Rid;
++        /* we're telling the window, we want it to report raw input events from mice */
++        Rid.usUsagePage = 0x01;
++        Rid.usUsage = 0x02;
++        Rid.dwFlags = RIDEV_INPUTSINK;
++        Rid.hwndTarget = hwnd;
++        RegisterRawInputDevices(&Rid, 1, sizeof(Rid));
++    }   
+     return 0;
+ }
+ 
