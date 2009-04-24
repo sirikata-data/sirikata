@@ -157,6 +157,7 @@ if ! $SDL_INSTALLED ; then
                tar -zxf SDL-1.3.0-4460.tar.gz;
                cd SDL-1.3.0-4460;
                ./configure --prefix=${DIR};
+               patch -p0 < ../SDLkeymouse.patch
                make $NUM_PROCS;
                make install;
                cd .."
