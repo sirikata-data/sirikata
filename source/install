@@ -145,6 +145,27 @@ function make_symlink {
     user_eval "cd ${DIR}; rm -f $LINK_NAME; ln -s $TARGET $LINK_NAME"
 }
 
+echo "Installing FreeImage..."
+FREEIMAGE_INSTALLED=false
+if [[ -n "$INSTALLED_FREEIMAGE" ]] ; then
+    make_symlink $INSTALLED_FREEIMAGE installed-freeimage
+    FREEIMAGE_INSTALLED=true
+fi
+
+if ! $FREEIMAGE_INSTALLED ; then
+    user_eval "cd ${DIR};
+               unzip -o FreeImage3100.zip;
+               cd FreeImage;
+               patch -p1 < ../FreeImage64bit.patch;
+               make $NUM_PROCS;
+               make dist;
+               cd ..;mkdir lib||echo exists;mkdir include||echo exists;
+               cp FreeImage/Dist/* ${DIR}/lib;
+               cp FreeImage/Dist/* ${DIR}/include"
+    make_symlink $DIR installed-freeimage
+fi
+
+
 echo "Installing SDL..."
 SDL_INSTALLED=false
 if [[ -n "$INSTALLED_SDL" ]] ; then
@@ -291,7 +312,7 @@ if ! $PREFIX_BOOST ; then
                cd ogre;
                patch -p0 < ../ogre.patch;
                ./bootstrap;
-               ./configure --enable-threading=semi --prefix=${DIR};
+               ./configure --enable-threading=semi --prefix=${DIR} LDFLAGS=-L${DIR}/installed-freeimage/lib CXXFLAGS=-I${DIR}/installed-freeimage/include;
                make $NUM_PROCS;
                make install;
                cd .."
@@ -301,7 +322,7 @@ else
                cd ogre;
                patch -p0 < ../ogre.patch;
                ./bootstrap;
-               ./configure --with-boost=${DIR} --enable-threading=semi --prefix=${DIR};
+               ./configure --enable-threading=semi --prefix=${DIR} --with-boost=${DIR} LDFLAGS=-L${DIR}/installed-freeimage/lib CXXFLAGS=-I${DIR}/installed-freeimage/include;
                make $NUM_PROCS;
                make install;
                cd .."
