@@ -10,6 +10,7 @@ SAME_USER=true
 NUM_PROCS=-j2
 DIR=`pwd`
 
+WITH_MONO=true
 
 ################################################################################################################################
 # Parse command-line arguments
@@ -48,6 +49,9 @@ do
           shift
           INSTALLED_OGRE="$1"
           ;;
+      --without-mono )
+          WITH_MONO=false
+          ;;
       --help )
           echo "
 Usage: $0 [--use-root] [--user <username>] [-j<num-procs>]
@@ -57,6 +61,7 @@ Usage: $0 [--use-root] [--user <username>] [-j<num-procs>]
            [--installed-protobufs <path>]
            [--installed-ogre <path>]
            [--installed-ois <path>]
+           [--without-mono]
 
 You must run the script with root privileges (sudo) if you specify --use-root.
 $0 --help displays this help message.
@@ -256,7 +261,7 @@ elif $USE_ROOT ; then
 fi
 
 if ! $CURL_INSTALLED ; then
-    
+
     user_eval "cd ${DIR};
                tar -jxf curl-7.19.4.tar.bz2;
                cd curl-7.19.4;
@@ -333,6 +338,8 @@ fi
 # Install Mono
 ################################################################################################################################
 
+if $WITH_MONO ; then
+
 echo "Installing MONO..."
 MONO_INSTALLED=false
 if [[ -n "$INSTALLED_MONO" ]] ; then
@@ -350,10 +357,13 @@ if ! $MONO_INSTALLED ; then
                cd .."
 fi
 
+fi
 
 ################################################################################################################################
 # Install DotNet-Protobufs
 ################################################################################################################################
+
+if $WITH_MONO ; then
 
 echo "Installing DotNet-Protobufs..."
 if [[ -n "$INSTALLED_PROTOBUFS" ]] ; then
@@ -367,6 +377,21 @@ else
                patch -p0 -N < ../protobufs_patches/new_list_empty.patch;
                mkdir ${DIR}/lib >& /dev/null || touch ${DIR}/lib ;
                find csharp/ProtocolBuffers -name *.cs |xargs ../installed-mono/bin/gmcs -target:library -out:${DIR}/lib/Google.ProtocolBuffers.dll ;
+               ./autogen.sh;
+               ./configure --prefix=${DIR};
+               make $NUM_PROCS;
+               make install;
+               cd .."
+fi
+
+else
+# Just install regular protocol buffers from Google
+echo "Installing Protobufs..."
+    user_eval "cd ${DIR};
+               wget http://protobuf.googlecode.com/files/protobuf-2.1.0.tar.gz;
+               tar -xzvf protobuf-2.1.0.tar.gz;
+               cd protobuf-2.1.0;
+               mkdir ${DIR}/lib >& /dev/null || touch ${DIR}/lib ;
                ./autogen.sh;
                ./configure --prefix=${DIR};
                make $NUM_PROCS;
