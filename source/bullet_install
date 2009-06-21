@@ -1,0 +1,24 @@
+#!/bin/bash
+
+dir=`pwd`
+
+if test  $# = "1"
+then
+NUMPROCS="-j4"
+echo $NUMPROCS
+else
+NUMPROCS=$2
+echo $NUMPROCS
+fi
+
+#######################################
+# Install bullet                      #
+#######################################
+echo "Installing bullet..."
+tar -zxf bullet-2.74.tar.gz
+cd ${dir}/bullet-2.74
+./autogen.sh
+./configure --prefix=${dir}/bullet
+make $NUMPROCS
+make install
+cd ..
