@@ -15,7 +15,7 @@ fi
 # Install bullet                      #
 #######################################
 echo "Installing bullet..."
-tar -zxf bullet-2.74.tar.gz
+tar -zxf bullet-2.74.tgz
 cd ${dir}/bullet-2.74
 ./autogen.sh
 ./configure --prefix=${dir}/bullet
