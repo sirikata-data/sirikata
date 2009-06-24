@@ -112,7 +112,7 @@ if $USE_ROOT ; then
        debian )
            apt-get install unzip zip automake1.9 nvidia-cg-toolkit jam g++ libzzip-dev libxt-dev libxaw7-dev libxxf86vm-dev \
                            libxrandr-dev libfreetype6-dev autoconf libtool libpcre3-dev flex bison patch libbz2-dev gawk \
-                           cmake
+                           cmake libglu1-mesa-dev
            ;;
      esac
 fi
@@ -224,6 +224,7 @@ elif $USE_ROOT ; then
             if (apt-get install libboost-system1.39-dev || apt-get install libboost-system1.38-dev || apt-get install libboost-system1.37-dev || apt-get install libboost-system1.36-dev) ; then
                 apt-get install libboost-program_options1.39-dev || apt-get install libboost-program_options1.38-dev || apt-get install libboost-program_options1.37-dev || apt-get install libboost-program_options1.36-dev
                 apt-get install libboost-thread1.39-dev || apt-get install libboost-thread1.38-dev || apt-get install libboost-thread1.37-dev || apt-get install libboost-thread1.36-dev
+                apt-get install libboost-math1.39-dev || apt-get install libboost-math1.38-dev || apt-get install libboost-math1.37-dev || apt-get install libboost-math1.36-dev
                 BOOST_INSTALLED=true
                 PREFIX_BOOST=false
             fi
