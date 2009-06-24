@@ -111,7 +111,8 @@ if $USE_ROOT ; then
      case "$DISTRO" in
        debian )
            apt-get install unzip zip automake1.9 nvidia-cg-toolkit jam g++ libzzip-dev libxt-dev libxaw7-dev libxxf86vm-dev \
-                           libxrandr-dev libfreetype6-dev autoconf libtool libpcre3-dev flex bison patch libbz2-dev gawk
+                           libxrandr-dev libfreetype6-dev autoconf libtool libpcre3-dev flex bison patch libbz2-dev gawk \
+                           cmake
            ;;
      esac
 fi
