@@ -20,5 +20,6 @@ cd ${dir}/bullet-2.74
 ./autogen.sh
 ./configure --prefix=${dir}/bullet
 make $NUMPROCS
+dos2unix install-sh
 make install
 cd ..
