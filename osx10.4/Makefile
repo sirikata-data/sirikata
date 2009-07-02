@@ -9,8 +9,8 @@ minimaldepends:
 	tar -jx --file ogre*.bz2 && \
 	tar -jx --file antlr-*.bz2 && \
 	tar -jx --file bullet-*.bz2 && \
-	ranlib installed-bullet/lib/* && \
-	ranlib lib/*
+	ranlib installed-bullet/lib/*.a && \
+	ranlib lib/*.a
 depends: minimaldepends
 
 fulldepends: depends
