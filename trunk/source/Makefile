@@ -1,13 +1,36 @@
 
-##### Levels of installation
+ifeq ($(ARCH),)
+ARCH=$(shell uname -m)
+endif
+
+ifneq ($(ARCH),x86_64)
+INSTALLFLAGS+=--force-32bit
+endif
 
 # Default rule:
-depends: minimaldepends installed-mono
+depends: check-architecture minimaldepends installed-mono
 
-minimaldepends: nonroot-dependencies compiled-dependencies 
+minimaldepends: check-architecture nonroot-dependencies compiled-dependencies installed-protobufs
 
-fulldepends: root-dependencies compiled-dependencies 
+fulldepends: check-architecture root-dependencies compiled-dependencies 
 
+
+check-architecture:
+	@if [ x"$(ARCH)" = x"x86_64" ]; then \
+	    if [ -e arch-32bit ]; then \
+                echo This dependencies folder was compiled for ARCH=i386, but you specified ARCH=$(ARCH). ; \
+	        false; \
+	    else \
+	        touch arch-64bit; \
+	    fi \
+	else \
+	    if [ -e arch-64bit ]; then \
+                echo This dependencies folder was compiled for ARCH=x86_64, but you specified ARCH=$(ARCH). ; \
+	        false; \
+	    else \
+	        touch arch-32bit; \
+	    fi \
+	fi
 
 ##### Rules to install each package
 installed-%:
@@ -20,13 +43,18 @@ installed-ogre: installed-freeimage installed-boost
 
 ##### 
 
-compiled-dependencies: installed-ois installed-ogre installed-freeimage installed-antlr installed-bullet
+compiled-dependencies: installed-ois installed-ogre installed-freeimage installed-antlr installed-bullet installed-sdl
 
 optional-dependencies: installed-mono
 
 nonroot-dependencies: installed-curl installed-boost 
 
 root-dependencies:
-	sudo ./install --use-root --user `whoami` boost curl
+	sudo ./install $(INSTALLFLAGS) --use-root --user `whoami` boost curl
 
+clean:
+	@echo "Clean command:"
+	@echo rm -rf `svn st | grep '^?' | grep -v 'protobuf-2.1.0.tar.gz' | cut -c 3-`
+	@echo "Are you sure you want to clean the entire dependencies directory?"
+	@read CONFIRM; if ! [ x"${CONFIRM#y}" = x"${CONFIRM}" ]; then rm -rf `svn st | grep '^?' | grep -v 'protobuf-2.1.0.tar.gz' | cut -c 3-`; fi
 

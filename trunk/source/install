@@ -6,9 +6,14 @@
 
 USE_ROOT=false
 USER=`whoami`
+USER_SHELL="$SHELL"
 SAME_USER=true
 NUM_PROCS=-j2
 DIR=`pwd`
+platform="`uname -m`"
+
+
+FORCE_32BIT=false
 
 WITH_BOOST=false
 WITH_FREEIMAGE=false
@@ -27,6 +32,7 @@ function show_usage
 {
           echo "
 Usage: $0 [--use-root] [--user <username>] [-j<num-procs>]
+           [--force-32bit]
            [--installed-boost <path>]
            [--installed-bullet <path>]
            [--installed-freeimage <path>]
@@ -113,6 +119,10 @@ do
           shift
           USER="$1"
           ;;
+      --user-shell )
+          shift
+          USER_SHELL="$1"
+          ;;
       -j* ) NUM_PROCS="$1" ;;
       --installed-boost )
           shift
@@ -144,6 +154,12 @@ do
           ;;
       --without-mono )
           WITH_MONO=false
+          ;;
+      --force-32bit )
+          if [ x"$platform" = x"x86_64" ]; then
+              USER_SHELL="setarch i386 $SHELL"
+              FORCE_32BIT=true
+          fi
           ;;
       --help )
           show_usage
@@ -218,13 +234,13 @@ fi
 
 function user_eval {
     if $SAME_USER ; then
-        pushd "${DIR}"
-        eval $1
+        pushd "${DIR}" >/dev/null
+        $USER_SHELL -c "$1"
         RET=$?
-        popd
+        popd >/dev/null
         return $RET
     else
-        su -c "$1" - $USER
+        su - $USER $USER_SHELL -c "export OLDPATH='$OLDPATH'; export PATH='$PATH'; cd ${DIR}; $1"
         return $?
     fi
 }
@@ -249,7 +265,42 @@ function clean_dir {
 user_eval "cd ${DIR}; mkdir ${DIR}/include >& /dev/null || touch ${DIR}/include"
 user_eval "cd ${DIR}; mkdir ${DIR}/lib >& /dev/null || touch ${DIR}/lib"
 
+if $FORCE_32BIT; then
+    echo "******** Forcing 32-bit ********"
+    user_eval "
+    mkdir bin32 ;
+    echo '#!/bin/bash' > bin32/gcc ;
+    echo 'export PATH="'"${OLDPATH}"'"' >> bin32/gcc ;
+    echo '"'`basename $0` -m32 "${@/usr\/lib\/lib/usr/lib32/lib}"'"' >> bin32/gcc ;
+    cp -f bin32/gcc bin32/g++ ;
+    cp -f bin32/gcc bin32/c++ ;
+    cp -f bin32/gcc bin32/cc ;
+    chmod +x bin32/*
+    "
+    export OLDPATH="${PATH}"
+    export PATH="${DIR}/bin32:${PATH}"
+    echo $PATH
+fi
+
+################################################################################################################################
+# Install 32-bit support packages
+################################################################################################################################
+
+if $USE_ROOT && $FORCE_32BIT; then
+     case "$DISTRO" in
+       debian )
+           apt-get install libc6-dev-i386 libc6-i386 ia32-libs lib32gcc1 lib32stdc++6
+           apt-get install lib32asound2 lib32gomp1 lib32icu38 lib32ncurses5 lib32nss-mdns lib32z1 libx86-1
+           ;;
+     esac
+fi
+
+
 FAILED=
+
+################################################################################################################################
+# Install FreeImage and SDL and ANTLR
+################################################################################################################################
 
 if [[ -n "$INSTALLED_FREEIMAGE" ]] ; then
     make_symlink $INSTALLED_FREEIMAGE installed-freeimage
@@ -312,8 +363,8 @@ if [[ -n "$INSTALLED_BOOST" ]] ; then
     make_symlink $INSTALLED_BOOST installed-boost
     WITH_BOOST=false
 fi
-if $USE_ROOT ; then
-  if $WITH_BOOST; then
+if $USE_ROOT && $WITH_BOOST; then
+  if ! $FORCE_32BIT; then
     echo "Installing Boost system-wide..."
     case "$DISTRO" in
         debian )
@@ -321,7 +372,7 @@ if $USE_ROOT ; then
                 apt-get install libboost-program_options1.39-dev || apt-get install libboost-program_options1.38-dev || apt-get install libboost-program_options1.37-dev || apt-get install libboost-program_options1.36-dev
                 apt-get install libboost-thread1.39-dev || apt-get install libboost-thread1.38-dev || apt-get install libboost-thread1.37-dev || apt-get install libboost-thread1.36-dev
                 apt-get install libboost-math1.39-dev || apt-get install libboost-math1.38-dev || apt-get install libboost-math1.37-dev || apt-get install libboost-math1.36-dev
-                make_symlink . installed-boost
+                make_symlink /usr/lib installed-boost
                 PREFIX_BOOST=false
                 WITH_BOOST=false
             fi
@@ -331,15 +382,15 @@ if $USE_ROOT ; then
 fi
 if $WITH_BOOST ; then
     echo "Installing Boost..."
+    clean_dir installed-boost
     user_eval "cd ${DIR} &&
                tar -jxf boost_1_37_0.tar.bz2 &&
                cd boost_1_37_0 &&
-               ./configure --prefix=${DIR} &&
+               ./configure --without-icu --without-libraries=python --prefix=${DIR} &&
                cat Makefile | sed -e s/LIBS=$/LIBS=$NUM_PROCS/ > Makefile_multiproc &&
                make $NUM_PROCS -f Makefile_multiproc &&
-               make install;
-               cd .." && \
-    make_symlink . installed-boost || \
+               make install" && \
+    make_symlink boost_1_37_0 installed-boost || \
     FAILED="$FAILED boost"
 fi
 
@@ -352,8 +403,8 @@ if [[ -n "$INSTALLED_CURL" ]] ; then
     make_symlink $INSTALLED_CURL installed-curl
     WITH_CURL=false
 fi
-if $USE_ROOT ; then
-  if $WITH_CURL ; then
+if $USE_ROOT && $WITH_CURL ; then
+  if ! $FORCE_32BIT; then
     echo "Installing CURL system-wide..."
     case "$DISTRO" in
         debian )
@@ -428,31 +479,34 @@ fi
 if [[ -n "$INSTALLED_OGRE" ]] ; then
     make_symlink $INSTALLED_OGRE installed-ogre
 elif $WITH_OGRE ; then
-echo "Installing Ogre..."
-if ! $PREFIX_BOOST ; then
+    echo "Installing Ogre..."
+    if $PREFIX_BOOST ; then
+        EXTRA_FLAGS="--with-boost=${DIR}/installed-boost"
+    fi
+    if $FORCE_32BIT; then
+        [ -e "${DIR}/lib/libzzip.so" ] || [ -e "/usr/lib32/libzzip.so" ] || \
+            user_eval "echo Installing 32-bit ZZIP;
+                       cd ${DIR} &&
+                       mkdir temp-extract && cd temp-extract &&
+                       wget http://http.us.debian.org/debian/pool/main/z/zziplib/libzzip-0-13_0.13.49-4_i386.deb -O zzip.deb &&
+                       ar p zzip.deb data.tar.gz | tar -zxf - &&
+                       cd usr/lib &&
+                       ln -s libzzip-0.so.13 libzzip.so &&
+                       cp -p libzzip* ${DIR}/lib/" && \
+            echo "zzip installed"
+        ZZIPLIB_LIBS="-L${DIR}/lib -lzzip"
+        [ -e "/usr/lib32/libXaw.so" ] || ln -sf /usr/lib32/libXaw.so.* ${DIR}/lib/libXaw.so 2> /dev/null
+    fi
     user_eval "cd ${DIR} &&
                tar -jxf ogre-v1-6-1.tar.bz2 &&
                cd ogre &&
                patch -p0 < ../ogre.patch &&
                ./bootstrap &&
-               ./configure --enable-threading=semi --prefix=${DIR} LDFLAGS=-L${DIR}/installed-freeimage/lib CXXFLAGS=-I${DIR}/installed-freeimage/include &&
+               ZZIPLIB_LIBS='${ZZIPLIB_LIBS}' ./configure --enable-threading=semi ${EXTRA_FLAGS} --prefix=${DIR} LDFLAGS=-L${DIR}/installed-freeimage/lib CXXFLAGS=-I${DIR}/installed-freeimage/include &&
                make $NUM_PROCS &&
                make install" && \
-    make_symlink . installed-ogre || \
+    make_symlink ogre installed-ogre || \
     FAILED="$FAILED ogre"
-
-else
-    user_eval "cd ${DIR} &&
-               tar -jxf ogre-v1-6-1.tar.bz2 &&
-               cd ogre &&
-               patch -p0 < ../ogre.patch &&
-               ./bootstrap &&
-               ./configure --enable-threading=semi --prefix=${DIR} --with-boost=${DIR}/installed-boost LDFLAGS=-L${DIR}/installed-freeimage/lib CXXFLAGS=-I${DIR}/installed-freeimage/include &&
-               make $NUM_PROCS &&
-               make install" && \
-    make_symlink . installed-ogre || \
-    FAILED="$FAILED ogre"
-fi
 fi
 
 ################################################################################################################################
@@ -489,7 +543,6 @@ elif $WITH_MONO ; then
                patch -p1 -N < ../protobufs_patches/build_fix.patch &&
                patch -p1 -N < ../protobufs_patches/csharp_generator_generic_namespace_alias.patch &&
                patch -p0 -N < ../protobufs_patches/new_list_empty.patch &&
-               patch -p0 -N < ../protobufs_patches/automake_command.patch &&
                find csharp/ProtocolBuffers -name *.cs |xargs ../installed-mono/bin/gmcs -target:library -out:${DIR}/lib/Google.ProtocolBuffers.dll && \
                ./autogen.sh && \
                ./configure --prefix=${DIR} && \
@@ -520,7 +573,7 @@ fi
 
 if ! [ x = x"$FAILED" ]; then
     for FAILITEM in $FAILED; do
-        echo CLEANING BULLET
+        echo CLEANING $FAILITEM
         clean_dir "installed-$FAILITEM"
     done
     echo "Installation of $FAILED has failed."
