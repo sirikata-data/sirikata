@@ -413,7 +413,9 @@ elif $WITH_BULLET ; then
                ./autogen.sh &&
                ./configure --prefix=${DIR}/installed-bullet &&
                make $NUMPROCS &&
-               make install" || \
+               make install && 
+               cp src/BulletDynamics/Dynamics/btActionInterface.h ${DIR}/bullet/include/bullet/BulletDynamics/Dynamics/ && 
+               echo // >>${DIR}/bullet/include/bullet/BulletDynamics/Dynamics/btActionInterface.h" || \
     FAILED="$FAILED bullet"
 
 fi
