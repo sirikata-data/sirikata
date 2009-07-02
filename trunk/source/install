@@ -10,7 +10,39 @@ SAME_USER=true
 NUM_PROCS=-j2
 DIR=`pwd`
 
-WITH_MONO=true
+WITH_BOOST=false
+WITH_FREEIMAGE=false
+WITH_CURL=false
+WITH_PROTOBUFS=false
+WITH_OIS=false
+WITH_OGRE=false
+WITH_MONO=false
+WITH_BULLET=false
+WITH_SDL=false
+WITH_ANTLR=false
+
+SHOW_USAGE=true
+
+function show_usage
+{
+          echo "
+Usage: $0 [--use-root] [--user <username>] [-j<num-procs>]
+           [--installed-boost <path>]
+           [--installed-bullet <path>]
+           [--installed-freeimage <path>]
+           [--installed-curl <path>]
+           [--installed-protobufs <path>]
+           [--installed-ogre <path>]
+           [--installed-ois <path>]
+           <package> ...
+
+Packages include:
+	all, boost, freeimage, curl, protobufs, sdl, ois, ogre, mono, bullet
+
+You must run the script with root privileges (sudo) if you specify --use-root.
+$0 --help displays this help message.
+"
+}
 
 ################################################################################################################################
 # Parse command-line arguments
@@ -19,7 +51,64 @@ WITH_MONO=true
 until [ -z "$1" ]  # until all parameters used up
 do
   case "$1" in
-      --use-root ) USE_ROOT=true ;;
+
+      boost)
+          SHOW_USAGE=false
+          WITH_BOOST=true
+          ;;
+      freeimage)
+          WITH_FREEIMAGE=true
+          SHOW_USAGE=false
+          ;;
+      curl)
+          WITH_CURL=true
+          SHOW_USAGE=false
+          ;;
+      protobufs)
+          WITH_PROTOBUFS=true
+          SHOW_USAGE=false
+          ;;
+      sdl)
+          WITH_SDL=true
+          SHOW_USAGE=false
+          ;;
+      ois)
+          WITH_OIS=true
+          SHOW_USAGE=false
+          ;;
+      ogre)
+          WITH_OGRE=true
+          SHOW_USAGE=false
+          ;;
+      mono)
+          WITH_MONO=true
+          SHOW_USAGE=false
+          ;;
+      antlr)
+          WITH_ANTLR=true
+          SHOW_USAGE=false
+          ;;
+      bullet)
+          WITH_BULLET=true
+          SHOW_USAGE=false
+          ;;
+      all)
+          WITH_BOOST=true
+          WITH_FREEIMAGE=true
+          WITH_CURL=true
+          WITH_PROTOBUFS=true
+          WITH_OIS=true
+          WITH_OGRE=true
+          WITH_MONO=true
+          WITH_BULLET=true
+          WITH_ANTLR=true
+          SHOW_USAGE=false
+          ;;
+
+      --use-root )
+          SHOW_USAGE=false
+          USE_ROOT=true
+          ;;
       --user )
           shift
           USER="$1"
@@ -41,6 +130,10 @@ do
           shift
           INSTALLED_PROTOBUFS="$1"
           ;;
+      --installed-bullet )
+          shift
+          INSTALLED_BULLET="$1"
+          ;;
       --installed-ois )
           shift
           INSTALLED_OIS="$1"
@@ -53,25 +146,17 @@ do
           WITH_MONO=false
           ;;
       --help )
-          echo "
-Usage: $0 [--use-root] [--user <username>] [-j<num-procs>]
-           [--installed-boost <path>]
-           [--installed-freeimage <path>]
-           [--installed-curl <path>]
-           [--installed-protobufs <path>]
-           [--installed-ogre <path>]
-           [--installed-ois <path>]
-           [--without-mono]
-
-You must run the script with root privileges (sudo) if you specify --use-root.
-$0 --help displays this help message.
-"
+          show_usage
           exit
           ;;
   esac
   shift
 done
 
+if $SHOW_USAGE; then
+    show_usage
+    exit
+fi
 
 ################################################################################################################################
 # Check for superuser
@@ -133,12 +218,16 @@ fi
 
 function user_eval {
     if $SAME_USER ; then
+        pushd "${DIR}"
         eval $1
+        RET=$?
+        popd
+        return $RET
     else
         su -c "$1" - $USER
+        return $?
     fi
 }
-
 
 ################################################################################################################################
 # Define a function to make a symlink to an existing installation
@@ -148,99 +237,110 @@ function make_symlink {
     TARGET=$1
     LINK_NAME=$2
 
-    user_eval "cd ${DIR}; rm -f $LINK_NAME; ln -s $TARGET $LINK_NAME"
+    user_eval "cd ${DIR}; rm -f $LINK_NAME; ln -fs $TARGET $LINK_NAME"
 }
 
-echo "Installing FreeImage..."
-FREEIMAGE_INSTALLED=false
+# Unlike make_symlink, this will delete the contents, if this is not a symlink.
+function clean_dir {
+    DIRECTORY=$1
+    user_eval "cd ${DIR}; rm -f ${DIRECTORY} 2>/dev/null; rm -rf ${DIRECTORY}"
+}
+
+user_eval "cd ${DIR}; mkdir ${DIR}/include >& /dev/null || touch ${DIR}/include"
+user_eval "cd ${DIR}; mkdir ${DIR}/lib >& /dev/null || touch ${DIR}/lib"
+
+FAILED=
+
 if [[ -n "$INSTALLED_FREEIMAGE" ]] ; then
     make_symlink $INSTALLED_FREEIMAGE installed-freeimage
-    FREEIMAGE_INSTALLED=true
-fi
-
-if ! $FREEIMAGE_INSTALLED ; then
+elif $WITH_FREEIMAGE; then
+    echo "Installing FreeImage..."
     user_eval "cd ${DIR};
-               unzip -o FreeImage3100.zip;
-               cd FreeImage;
-               patch -p1 < ../FreeImage64bit.patch;
-               make $NUM_PROCS;
-               make dist;
-               cd ..;mkdir lib||echo exists;mkdir include||echo exists;
+               unzip -o FreeImage3100.zip &&
+               cd FreeImage &&
+               patch -p1 < ../FreeImage64bit.patch &&
+               make $NUM_PROCS &&
+               make dist &&
+               (cd ..;mkdir lib||echo exists;mkdir include||echo exists ;
                cp FreeImage/Dist/* ${DIR}/lib;
-               cp FreeImage/Dist/* ${DIR}/include"
-    make_symlink $DIR installed-freeimage
+               cp FreeImage/Dist/* ${DIR}/include )" && \
+    make_symlink . installed-freeimage || \
+    FAILED="$FAILED freeimage"
 fi
 
 
-echo "Installing SDL..."
-SDL_INSTALLED=false
 if [[ -n "$INSTALLED_SDL" ]] ; then
-    make_symlink $INSTALLED_SDL installed-ogre
-    SDL_INSTALLED=true
+    make_symlink $INSTALLED_SDL installed-sdl
+elif $WITH_SDL; then
+    echo "Installing SDL..."
+    user_eval "cd ${DIR} &&
+               tar -zxf SDL-1.3.0-4460.tar.gz &&
+               cd SDL-1.3.0-4460 &&
+               ./configure --prefix=${DIR} &&
+               patch -p0 < ../SDLkeymouse.patch &&
+               make $NUM_PROCS &&
+               make install" && \
+    make_symlink . installed-sdl || \
+    FAILED="$FAILED sdl"
 fi
 
-if ! $SDL_INSTALLED ; then
-    user_eval "cd ${DIR};
-               tar -zxf SDL-1.3.0-4460.tar.gz;
-               cd SDL-1.3.0-4460;
-               ./configure --prefix=${DIR};
-               patch -p0 < ../SDLkeymouse.patch
-               make $NUM_PROCS;
-               make install;
-               cd .."
-fi
-
-echo "Installing ANTLR..."
-ANTLR_INSTALLED=false
 if [[ -n "$INSTALLED_ANTLR" ]] ; then
-    make_symlink $INSTALLED_ANTLR installed-ogre
-    ANTLR_INSTALLED=true
-fi
+    make_symlink $INSTALLED_ANTLR installed-antlr
+elif $WITH_ANTLR ; then
+    echo "Installing ANTLR..."
+    user_eval "cd ${DIR} &&
+               tar -zxf libantlr3c-3.1.3.tar.gz &&
+               cd libantlr3c-3.1.3 &&
+               (if uname -m | grep x86_64; then
+                   ./configure --prefix=${DIR} --disable-shared --enable-64bit ;
+               else
+                   ./configure --prefix=${DIR} --disable-shared ;
+               fi) &&
+               make $NUM_PROCS &&
+               make install" && \
+    make_symlink . installed-antlr || \
+    FAILED="$FAILED antlr"
 
-if ! $ANTLR_INSTALLED ; then
-    user_eval "cd ${DIR};
-               tar -zxf libantlr3c-3.1.3.tar.gz;
-               cd libantlr3c-3.1.3;
-               uname -m | grep x86_64 &&./configure --prefix=${DIR} --disable-shared --enable-64bit;
-               uname -m | grep x86_64 || ./configure --prefix=${DIR} --disable-shared;
-               make $NUM_PROCS;
-               make install;
-               cd .."
 fi
 
 ################################################################################################################################
 # Install Boost
 ################################################################################################################################
 
-echo "Installing Boost..."
-BOOST_INSTALLED=false
 PREFIX_BOOST=true
 if [[ -n "$INSTALLED_BOOST" ]] ; then
     make_symlink $INSTALLED_BOOST installed-boost
-    BOOST_INSTALLED=true
-elif $USE_ROOT ; then
+    WITH_BOOST=false
+fi
+if $USE_ROOT ; then
+  if $WITH_BOOST; then
+    echo "Installing Boost system-wide..."
     case "$DISTRO" in
         debian )
             if (apt-get install libboost-system1.39-dev || apt-get install libboost-system1.38-dev || apt-get install libboost-system1.37-dev || apt-get install libboost-system1.36-dev) ; then
                 apt-get install libboost-program_options1.39-dev || apt-get install libboost-program_options1.38-dev || apt-get install libboost-program_options1.37-dev || apt-get install libboost-program_options1.36-dev
                 apt-get install libboost-thread1.39-dev || apt-get install libboost-thread1.38-dev || apt-get install libboost-thread1.37-dev || apt-get install libboost-thread1.36-dev
                 apt-get install libboost-math1.39-dev || apt-get install libboost-math1.38-dev || apt-get install libboost-math1.37-dev || apt-get install libboost-math1.36-dev
-                BOOST_INSTALLED=true
+                make_symlink . installed-boost
                 PREFIX_BOOST=false
+                WITH_BOOST=false
             fi
             ;;
     esac
+  fi
 fi
-
-if ! $BOOST_INSTALLED ; then
-    user_eval "cd ${DIR};
-               tar -jxf boost_1_37_0.tar.bz2;
-               cd boost_1_37_0;
-               ./configure --prefix=${DIR};
-               cat Makefile | sed -e s/LIBS=$/LIBS=$NUM_PROCS/ > Makefile_multiproc;
-               make $NUM_PROCS -f Makefile_multiproc;
+if $WITH_BOOST ; then
+    echo "Installing Boost..."
+    user_eval "cd ${DIR} &&
+               tar -jxf boost_1_37_0.tar.bz2 &&
+               cd boost_1_37_0 &&
+               ./configure --prefix=${DIR} &&
+               cat Makefile | sed -e s/LIBS=$/LIBS=$NUM_PROCS/ > Makefile_multiproc &&
+               make $NUM_PROCS -f Makefile_multiproc &&
                make install;
-               cd .."
+               cd .." && \
+    make_symlink . installed-boost || \
+    FAILED="$FAILED boost"
 fi
 
 
@@ -248,33 +348,32 @@ fi
 # Install CURL
 ################################################################################################################################
 
-echo "Installing CURL..."
-CURL_INSTALLED=false
 if [[ -n "$INSTALLED_CURL" ]] ; then
     make_symlink $INSTALLED_CURL installed-curl
-    CURL_INSTALLED=true
-elif $USE_ROOT ; then
+    WITH_CURL=false
+fi
+if $USE_ROOT ; then
+  if $WITH_CURL ; then
+    echo "Installing CURL system-wide..."
     case "$DISTRO" in
         debian )
             apt-get install libcurl4-openssl-dev
-            CURL_INSTALLED=true
+            make_symlink . installed-curl
+            WITH_CURL=false
             ;;
     esac
+  fi
 fi
-
-if ! $CURL_INSTALLED ; then
-
-    user_eval "cd ${DIR};
-               tar -jxf curl-7.19.4.tar.bz2;
-               cd curl-7.19.4;
-               ./configure --prefix=${DIR}/installed-curl;
-               make $NUM_PROCS;
-               make install;
-               cd ${DIR}"
-    #make_symlink /usr installed-curl
-    #CURL_INSTALLED=true
-    #echo "Could not install CURL"
-    #exit
+if $WITH_CURL ; then
+    echo "Installing CURL..."
+    clean_dir installed-curl
+    user_eval "cd ${DIR} &&
+               tar -jxf curl-7.19.4.tar.bz2 &&
+               cd curl-7.19.4 &&
+               ./configure --prefix=${DIR}/installed-curl &&
+               make $NUM_PROCS &&
+               make install" || \
+    FAILED="$FAILED curl"
 fi
 
 
@@ -283,56 +382,73 @@ fi
 # Install OIS
 ################################################################################################################################
 
-echo "Installing OIS..."
-OIS_INSTALLED=false
 if [[ -n "$INSTALLED_OIS" ]] ; then
     make_symlink $INSTALLED_OIS installed-ois
-    OIS_INSTALLED=true
+elif $WITH_OIS ; then
+    echo "Installing OIS..."
+    user_eval "cd ${DIR} &&
+               tar -zxf ois_1.2.0.tar.gz &&
+               cd ois &&
+               ./bootstrap &&
+               ./configure --prefix=${DIR} &&
+               make $NUM_PROCS &&
+               make install" && \
+    make_symlink . installed-ois || \
+    FAILED="$FAILED ois"
+
 fi
 
-if ! $OIS_INSTALLED ; then
-    user_eval "cd ${DIR};
-               tar -zxf ois_1.2.0.tar.gz;
-               cd ois;
-               ./bootstrap
-               ./configure --prefix=${DIR};
-               make $NUM_PROCS;
-               make install;
-               cd .."
+# Install Bullet
+
+if [[ -n "$INSTALLED_BULLET" ]] ; then
+    make_symlink $INSTALLED_BULLET installed-bullet
+elif $WITH_BULLET ; then
+    echo "Installing Bullet..."
+    clean_dir installed-bullet
+    user_eval "cd ${DIR} &&
+               tar -zxf bullet-2.74.tgz &&
+               cd bullet-2.74 &&
+               mv install-sh install-sh.bak &&
+               tr -d '\r' < install-sh.bak > install-sh &&
+               ./autogen.sh &&
+               ./configure --prefix=${DIR}/installed-bullet &&
+               make $NUMPROCS &&
+               make install" || \
+    FAILED="$FAILED bullet"
+
 fi
 
 ################################################################################################################################
 # Install Ogre
 ################################################################################################################################
 
-echo "Installing Ogre..."
-OGRE_INSTALLED=false
 if [[ -n "$INSTALLED_OGRE" ]] ; then
     make_symlink $INSTALLED_OGRE installed-ogre
-    OGRE_INSTALLED=true
-fi
-
-if ! $OGRE_INSTALLED ; then
+elif $WITH_OGRE ; then
+echo "Installing Ogre..."
 if ! $PREFIX_BOOST ; then
-    user_eval "cd ${DIR};
-               tar -jxf ogre-v1-6-1.tar.bz2;
-               cd ogre;
-               patch -p0 < ../ogre.patch;
-               ./bootstrap;
-               ./configure --enable-threading=semi --prefix=${DIR} LDFLAGS=-L${DIR}/installed-freeimage/lib CXXFLAGS=-I${DIR}/installed-freeimage/include;
-               make $NUM_PROCS;
-               make install;
-               cd .."
+    user_eval "cd ${DIR} &&
+               tar -jxf ogre-v1-6-1.tar.bz2 &&
+               cd ogre &&
+               patch -p0 < ../ogre.patch &&
+               ./bootstrap &&
+               ./configure --enable-threading=semi --prefix=${DIR} LDFLAGS=-L${DIR}/installed-freeimage/lib CXXFLAGS=-I${DIR}/installed-freeimage/include &&
+               make $NUM_PROCS &&
+               make install" && \
+    make_symlink . installed-ogre || \
+    FAILED="$FAILED ogre"
+
 else
-    user_eval "cd ${DIR};
-               tar -jxf ogre-v1-6-1.tar.bz2;
-               cd ogre;
-               patch -p0 < ../ogre.patch;
-               ./bootstrap;
-               ./configure --enable-threading=semi --prefix=${DIR} --with-boost=${DIR} LDFLAGS=-L${DIR}/installed-freeimage/lib CXXFLAGS=-I${DIR}/installed-freeimage/include;
-               make $NUM_PROCS;
-               make install;
-               cd .."
+    user_eval "cd ${DIR} &&
+               tar -jxf ogre-v1-6-1.tar.bz2 &&
+               cd ogre &&
+               patch -p0 < ../ogre.patch &&
+               ./bootstrap &&
+               ./configure --enable-threading=semi --prefix=${DIR} --with-boost=${DIR}/installed-boost LDFLAGS=-L${DIR}/installed-freeimage/lib CXXFLAGS=-I${DIR}/installed-freeimage/include &&
+               make $NUM_PROCS &&
+               make install" && \
+    make_symlink . installed-ogre || \
+    FAILED="$FAILED ogre"
 fi
 fi
 
@@ -340,55 +456,47 @@ fi
 # Install Mono
 ################################################################################################################################
 
-if $WITH_MONO ; then
-
-echo "Installing MONO..."
 MONO_INSTALLED=false
 if [[ -n "$INSTALLED_MONO" ]] ; then
     make_symlink $INSTALLED_MONO installed-mono
-    MONO_INSTALLED=true
-fi
-
-if ! $MONO_INSTALLED ; then
-    user_eval "cd ${DIR};
-               tar -jxf mono-2.4.tar.bz2;
-               cd mono-2.4;
-               ./configure --prefix=${DIR}/installed-mono;
-               make $NUM_PROCS;
-               make install;
-               cd .."
-fi
-
+elif $WITH_MONO ; then
+    echo "Installing MONO..."
+    clean_dir installed-mono
+    user_eval "cd ${DIR} &&
+               tar -jxf mono-2.4.tar.bz2 &&
+               cd mono-2.4 &&
+               ./configure --prefix=${DIR}/installed-mono &&
+               make $NUM_PROCS &&
+               make install" || \
+    FAILED="$FAILED mono"
 fi
 
 ################################################################################################################################
 # Install DotNet-Protobufs
 ################################################################################################################################
 
-if $WITH_MONO ; then
 
-echo "Installing DotNet-Protobufs..."
 if [[ -n "$INSTALLED_PROTOBUFS" ]] ; then
     make_symlink $INSTALLED_PROTOBUFS installed-protobufs
-else
-    user_eval "cd ${DIR};
-               tar -zxf dotnet-protobufs.f0b299db576712173d00cacf0fd7c7583eb8ed25.tar.gz;
-               cd dotnet-protobufs;
-               patch -p1 -N < ../protobufs_patches/build_fix.patch;
-               patch -p1 -N < ../protobufs_patches/csharp_generator_generic_namespace_alias.patch;
-               patch -p0 -N < ../protobufs_patches/new_list_empty.patch;
-               mkdir ${DIR}/lib >& /dev/null || touch ${DIR}/lib ;
-               find csharp/ProtocolBuffers -name *.cs |xargs ../installed-mono/bin/gmcs -target:library -out:${DIR}/lib/Google.ProtocolBuffers.dll ;
-               ./autogen.sh;
-               ./configure --prefix=${DIR};
-               make $NUM_PROCS;
-               make install;
-               cd .."
-fi
-
-else
+elif $WITH_MONO ; then
+    echo "Installing DotNet-Protobufs..."
+    user_eval "cd ${DIR} &&
+               tar -zxf dotnet-protobufs.f0b299db576712173d00cacf0fd7c7583eb8ed25.tar.gz &&
+               cd dotnet-protobufs &&
+               patch -p1 -N < ../protobufs_patches/build_fix.patch &&
+               patch -p1 -N < ../protobufs_patches/csharp_generator_generic_namespace_alias.patch &&
+               patch -p0 -N < ../protobufs_patches/new_list_empty.patch &&
+               patch -p0 -N < ../protobufs_patches/automake_command.patch &&
+               find csharp/ProtocolBuffers -name *.cs |xargs ../installed-mono/bin/gmcs -target:library -out:${DIR}/lib/Google.ProtocolBuffers.dll && \
+               ./autogen.sh && \
+               ./configure --prefix=${DIR} && \
+               make $NUM_PROCS && \
+               make install" && \
+    make_symlink . installed-protobufs || \
+    FAILED="$FAILED protobufs"
+elif $WITH_PROTOBUFS; then
 # Just install regular protocol buffers from Google
-echo "Installing Protobufs..."
+   echo "Installing Protobufs without mono..."
     user_eval "cd ${DIR};
                wget http://protobuf.googlecode.com/files/protobuf-2.1.0.tar.gz;
                tar -xzvf protobuf-2.1.0.tar.gz;
@@ -398,11 +506,23 @@ echo "Installing Protobufs..."
                ./configure --prefix=${DIR};
                make $NUM_PROCS;
                make install;
-               cd .."
+               cd .." && \
+    make_symlink . installed-protobufs || \
+    FAILED="$FAILED protobufs"
 fi
 
 ################################################################################################################################
 # Finish
 ################################################################################################################################
 
-echo "Installation complete"
+if ! [ x = x"$FAILED" ]; then
+    for FAILITEM in $FAILED; do
+        echo CLEANING BULLET
+        clean_dir "installed-$FAILITEM"
+    done
+    echo "Installation of $FAILED has failed."
+    exit 1
+fi
+
+exit 0
+
