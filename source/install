@@ -410,12 +410,13 @@ elif $WITH_BULLET ; then
                cd bullet-2.74 &&
                mv install-sh install-sh.bak &&
                tr -d '\r' < install-sh.bak > install-sh &&
+               chmod 755 install-sh &&
                ./autogen.sh &&
                ./configure --prefix=${DIR}/installed-bullet &&
                make $NUMPROCS &&
                make install && 
-               cp src/BulletDynamics/Dynamics/btActionInterface.h ${DIR}/bullet/include/bullet/BulletDynamics/Dynamics/ && 
-               echo // >>${DIR}/bullet/include/bullet/BulletDynamics/Dynamics/btActionInterface.h" || \
+               cp src/BulletDynamics/Dynamics/btActionInterface.h ${DIR}/installed-bullet/include/bullet/BulletDynamics/Dynamics/ && 
+               echo // >>${DIR}/installed-bullet/include/bullet/BulletDynamics/Dynamics/btActionInterface.h" || \
     FAILED="$FAILED bullet"
 
 fi
