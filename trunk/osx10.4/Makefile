@@ -8,7 +8,9 @@ minimaldepends:
 	unzip -o SDL-1.3*.zip && \
 	tar -jx --file ogre*.bz2 && \
 	tar -jx --file antlr-*.bz2 && \
-	tar -jx --file bullet-*.bz2
+	tar -jx --file bullet-*.bz2 && \
+	ranlib installed-bullet/lib/* && \
+	ranlib lib/*
 depends: minimaldepends
 
 fulldepends: depends
