@@ -497,9 +497,6 @@ if [[ -n "$INSTALLED_OGRE" ]] ; then
     make_symlink $INSTALLED_OGRE installed-ogre
 elif $WITH_OGRE ; then
     echo "Installing Ogre..."
-    if $PREFIX_BOOST ; then
-        EXTRA_FLAGS="--with-boost=${DIR}/installed-boost"
-    fi
     if $FORCE_32BIT; then
         [ -e "${DIR}/lib/libzzip.so" ] || [ -e "/usr/lib32/libzzip.so" ] || \
             user_eval "echo Installing 32-bit ZZIP;
@@ -520,7 +517,7 @@ elif $WITH_OGRE ; then
                cd ogre &&
                patch -p0 < ../ogre.patch &&
                ./bootstrap &&
-               ZZIPLIB_LIBS='${ZZIPLIB_LIBS}' ./configure --enable-threading=semi ${EXTRA_FLAGS} --prefix=${DIR} LDFLAGS=-L${DIR}/lib CXXFLAGS=-I${DIR}/include &&
+               ZZIPLIB_LIBS='${ZZIPLIB_LIBS}' ./configure --disable-ogre-demos --enable-threading=semi --with-boost="${DIR}/installed-boost" --prefix=${DIR} LDFLAGS='-L${DIR}/lib -L${DIR}/installed-boost/lib -Wl,--rpath -Wl,${DIR}/installed-boost/lib' CXXFLAGS=-I${DIR}/include &&
                make $NUM_PROCS &&
                make install" && \
     make_symlink ogre installed-ogre || \
