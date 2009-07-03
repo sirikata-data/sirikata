@@ -12,7 +12,7 @@ depends: check-architecture minimaldepends installed-mono
 
 minimaldepends: check-architecture nonroot-dependencies compiled-dependencies installed-protobufs
 
-fulldepends: check-architecture root-dependencies compiled-dependencies 
+fulldepends: check-architecture root-dependencies compiled-dependencies installed-protobufs
 
 awesomium-root: chromium-root
 	$(MAKE) installed-awesomium $(*)
@@ -48,13 +48,13 @@ installed-ogre: installed-freeimage installed-boost
 
 installed-awesomium: installed-chromium
 
-##### 
+#####
 
 compiled-dependencies: installed-ois installed-ogre installed-freeimage installed-antlr installed-bullet installed-sdl
 
 optional-dependencies: installed-mono
 
-nonroot-dependencies: installed-curl installed-boost 
+nonroot-dependencies: installed-curl installed-boost
 
 root-dependencies:
 	sudo ./install $(INSTALLFLAGS) --use-root --user `whoami` boost curl
@@ -64,4 +64,3 @@ clean:
 	@echo rm -rf `svn st | grep '^?' | grep -v 'protobuf-2.1.0.tar.gz' | cut -c 3-`
 	@echo "Are you sure you want to clean the entire dependencies directory?"
 	@read CONFIRM; if ! [ x"${CONFIRM#y}" = x"${CONFIRM}" ]; then rm -rf `svn st | grep '^?' | grep -v 'protobuf-2.1.0.tar.gz' | cut -c 3-`; fi
-
