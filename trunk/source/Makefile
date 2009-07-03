@@ -14,6 +14,12 @@ minimaldepends: check-architecture nonroot-dependencies compiled-dependencies in
 
 fulldepends: check-architecture root-dependencies compiled-dependencies 
 
+awesomium-root: chromium-root
+	$(MAKE) installed-awesomium $(*)
+
+chromium-root:
+	sudo ./install $(INSTALLFLAGS) --use-root --user `whoami` chromiumdeps
+	$(MAKE) installed-chromium $(*)
 
 check-architecture:
 	@if [ x"$(ARCH)" = x"x86_64" ]; then \
@@ -40,6 +46,7 @@ installed-ois: installed-ogre
 
 installed-ogre: installed-freeimage installed-boost
 
+installed-awesomium: installed-chromium
 
 ##### 
 
