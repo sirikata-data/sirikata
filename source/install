@@ -545,10 +545,9 @@ elif $WITH_MONO ; then
                patch -p0 -N < ../protobufs_patches/new_list_empty.patch &&
                find csharp/ProtocolBuffers -name *.cs |xargs ../installed-mono/bin/gmcs -target:library -out:${DIR}/lib/Google.ProtocolBuffers.dll && \
                ./autogen.sh && \
-               ./configure --prefix=${DIR} && \
+               ./configure --prefix=${DIR}/installed-protobufs && \
                make $NUM_PROCS && \
-               make install" && \
-    make_symlink dotnet-protobufs installed-protobufs || \
+               make install" || \
     FAILED="$FAILED protobufs"
 elif $WITH_PROTOBUFS; then
 # Just install regular protocol buffers from Google
@@ -559,11 +558,10 @@ elif $WITH_PROTOBUFS; then
                cd protobuf-2.1.0;
                mkdir ${DIR}/lib >& /dev/null || touch ${DIR}/lib ;
                ./autogen.sh;
-               ./configure --prefix=${DIR};
+               ./configure --prefix=${DIR}/installed-protobufs;
                make $NUM_PROCS;
                make install;
-               cd .." && \
-    make_symlink protobuf-2.1.0 installed-protobufs || \
+               cd .." || \
     FAILED="$FAILED protobufs"
 fi
 
@@ -581,4 +579,3 @@ if ! [ x = x"$FAILED" ]; then
 fi
 
 exit 0
-
