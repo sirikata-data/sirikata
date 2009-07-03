@@ -386,11 +386,10 @@ if $WITH_BOOST ; then
     user_eval "cd ${DIR} &&
                tar -jxf boost_1_37_0.tar.bz2 &&
                cd boost_1_37_0 &&
-               ./configure --without-icu --without-libraries=python --prefix=${DIR} &&
+               ./configure --without-icu --without-libraries=python --prefix=${DIR}/installed-boost &&
                cat Makefile | sed -e s/LIBS=$/LIBS=$NUM_PROCS/ > Makefile_multiproc &&
                make $NUM_PROCS -f Makefile_multiproc &&
-               make install" && \
-    make_symlink boost_1_37_0 installed-boost || \
+               make install" || \
     FAILED="$FAILED boost"
 fi
 
