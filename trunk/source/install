@@ -309,9 +309,15 @@ if $USE_ROOT && $FORCE_32BIT; then
        debian )
            apt-get install libc6-dev-i386 libc6-i386 ia32-libs lib32gcc1 lib32stdc++6
            apt-get install lib32asound2 lib32gomp1 lib32icu38 lib32ncurses5 lib32nss-mdns lib32z1 libx86-1
+           apt-get install lib32bz2-dev
            ;;
      esac
 fi
+# Also need:
+# sudo ln -s libstdc++.so.6 libstdc++.so
+# sudo ln -s libgthread-2.0.so.0 libgthread-2.0.so
+#sudo ln -s libGLU.so.1 libGLU.so
+#sudo ln -s libglut.so.3 libglut.so
 
 
 FAILED=
@@ -500,8 +506,8 @@ elif $WITH_OGRE ; then
     if $FORCE_32BIT; then
         [ -e "${DIR}/lib/libzzip.so" ] || [ -e "/usr/lib32/libzzip.so" ] || \
             user_eval "echo Installing 32-bit ZZIP;
-                       cd ${DIR} &&
-                       mkdir temp-extract && cd temp-extract &&
+                       cd ${DIR};
+                       mkdir temp-extract; cd temp-extract &&
                        wget http://http.us.debian.org/debian/pool/main/z/zziplib/libzzip-0-13_0.13.49-4_i386.deb -O zzip.deb &&
                        ar p zzip.deb data.tar.gz | tar -zxf - &&
                        cd usr/lib &&
@@ -509,7 +515,21 @@ elif $WITH_OGRE ; then
                        cp -p libzzip* ${DIR}/lib/" && \
             echo "zzip installed"
         ZZIPLIB_LIBS="-L${DIR}/lib -lzzip"
-        [ -e "/usr/lib32/libXaw.so" ] || ln -sf /usr/lib32/libXaw.so.* ${DIR}/lib/libXaw.so 2> /dev/null
+        [ -e "/usr/lib32/libXaw.so" ] || make_symlink /usr/lib32/libXaw.so.? lib/libXaw.so
+        [ -e "/usr/lib32/libstdc++.so" ] || make_symlink /usr/lib32/libstdc++.so.6 lib/libstdc++.so
+        [ -e "/usr/lib32/libgthread-2.0.so" ] || make_symlink /usr/lib32/libgthread-2.0.so.? lib/libgthread-2.0.so
+        [ -e "/usr/lib32/libGLU.so" ] || make_symlink /usr/lib32/libGLU.so.? lib/libGLU.so
+        [ -e "/usr/lib32/libglut.so" ] || make_symlink /usr/lib32/libglut.so.? lib/libglut.so
+        [ -e "${DIR}/lib/libCg.so" ] || [ -e "/usr/lib32/libCg.so" ] || [ -e "/usr/local/lib32/libCg.so" ] || \
+            user_eval "echo Installing 32-bit Nvidia Cg Toolkit;
+                       cd ${DIR} &&
+                       mkdir temp-extract; cd temp-extract &&
+                       wget -c http://developer.download.nvidia.com/cg/Cg_2.2/Cg-2.2_April2009_x86.tgz &&
+                       tar -zxf Cg-2.2_April2009_x86.tgz &&
+                       mv usr/lib/libCg.so ../lib/ &&
+                       (mkdir ../include/Cg || true) &&
+                       mv usr/include/Cg/* ../include/Cg/" && \
+            echo "Cg Toolkit installed."
     fi
     clean_dir installed-ogre
     user_eval "cd ${DIR} &&
@@ -568,7 +588,7 @@ elif $WITH_PROTOBUFS; then
 # Just install regular protocol buffers from Google
    echo "Installing Protobufs without mono..."
     user_eval "cd ${DIR};
-               wget http://protobuf.googlecode.com/files/protobuf-2.1.0.tar.gz;
+               wget -c http://protobuf.googlecode.com/files/protobuf-2.1.0.tar.gz;
                tar -xzvf protobuf-2.1.0.tar.gz;
                cd protobuf-2.1.0;
                mkdir ${DIR}/lib >& /dev/null || touch ${DIR}/lib ;
