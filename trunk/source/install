@@ -508,24 +508,27 @@ elif $WITH_OGRE ; then
             user_eval "echo Installing 32-bit ZZIP;
                        cd ${DIR};
                        mkdir temp-extract; cd temp-extract &&
-                       wget http://http.us.debian.org/debian/pool/main/z/zziplib/libzzip-0-13_0.13.49-4_i386.deb -O zzip.deb &&
-                       ar p zzip.deb data.tar.gz | tar -zxf - &&
+                       ( tar -zxf ../zzip-0-13_0.13.49-4_i386.tar.gz || (wget http://http.us.debian.org/debian/pool/main/z/zziplib/libzzip-0-13_0.13.49-4_i386.deb -O zzip.deb &&
+                       ar p zzip.deb data.tar.gz | tar -zxf - ) ) && 
                        cd usr/lib &&
                        ln -s libzzip-0.so.13 libzzip.so &&
                        cp -p libzzip* ${DIR}/lib/" && \
             echo "zzip installed"
         ZZIPLIB_LIBS="-L${DIR}/lib -lzzip"
         [ -e "/usr/lib32/libXaw.so" ] || make_symlink /usr/lib32/libXaw.so.? lib/libXaw.so
+        [ -e "/usr/lib32/libXt.so" ] || make_symlink /usr/lib32/libXt.so.? lib/libXt.so
+        [ -e "/usr/lib32/libSM.so" ] || make_symlink /usr/lib32/libSM.so.? lib/libSM.so
+        [ -e "/usr/lib32/libICE.so" ] || make_symlink /usr/lib32/libICE.so.? lib/libICE.so
         [ -e "/usr/lib32/libstdc++.so" ] || make_symlink /usr/lib32/libstdc++.so.6 lib/libstdc++.so
-        [ -e "/usr/lib32/libgthread-2.0.so" ] || make_symlink /usr/lib32/libgthread-2.0.so.? lib/libgthread-2.0.so
-        [ -e "/usr/lib32/libGLU.so" ] || make_symlink /usr/lib32/libGLU.so.? lib/libGLU.so
-        [ -e "/usr/lib32/libglut.so" ] || make_symlink /usr/lib32/libglut.so.? lib/libglut.so
+        [ -e "/usr/lib32/libgthread-2.0.so" ] || make_symlink /usr/lib32/libgthread-2.0.so.* lib/libgthread-2.0.so
+        [ -e "/usr/lib32/libGLU.so" ] || make_symlink /usr/lib32/libGLU.so.* lib/libGLU.so
+        [ -e "/usr/lib32/libglut.so" ] || make_symlink /usr/lib32/libglut.so.* lib/libglut.so
         [ -e "${DIR}/lib/libCg.so" ] || [ -e "/usr/lib32/libCg.so" ] || [ -e "/usr/local/lib32/libCg.so" ] || \
             user_eval "echo Installing 32-bit Nvidia Cg Toolkit;
                        cd ${DIR} &&
                        mkdir temp-extract; cd temp-extract &&
-                       wget -c http://developer.download.nvidia.com/cg/Cg_2.2/Cg-2.2_April2009_x86.tgz &&
-                       tar -zxf Cg-2.2_April2009_x86.tgz &&
+                       curl -o cg-x86.tgz http://developer.download.nvidia.com/cg/Cg_2.2/Cg-2.2_April2009_x86.tgz &&
+                       tar -zxf cg-x86.tgz &&
                        mv usr/lib/libCg.so ../lib/ &&
                        (mkdir ../include/Cg || true) &&
                        mv usr/include/Cg/* ../include/Cg/" && \
@@ -594,8 +597,8 @@ elif $WITH_PROTOBUFS; then
                mkdir ${DIR}/lib >& /dev/null || touch ${DIR}/lib ;
                ./autogen.sh;
                ./configure --prefix=${DIR}/installed-protobufs;
-               make $NUM_PROCS;
-               make install;
+               echo=/bin/echo make $NUM_PROCS;
+               echo=/bin/echo make install;
                cd .." || \
     FAILED="$FAILED protobufs"
 fi
