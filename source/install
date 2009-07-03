@@ -516,6 +516,8 @@ elif $WITH_OGRE ; then
             echo "zzip installed"
         ZZIPLIB_LIBS="-L${DIR}/lib -lzzip"
         [ -e "/usr/lib32/libXaw.so" ] || make_symlink /usr/lib32/libXaw.so.? lib/libXaw.so
+        [ -e "/usr/lib32/libXrandr.so" ] || make_symlink /usr/lib32/libXrandr.so.? lib/libXrandr.so
+        [ -e "/usr/lib32/libXxf86vm.so" ] || make_symlink /usr/lib32/libXxf86vm.so.? lib/libXxf86vm.so
         [ -e "/usr/lib32/libXt.so" ] || make_symlink /usr/lib32/libXt.so.? lib/libXt.so
         [ -e "/usr/lib32/libSM.so" ] || make_symlink /usr/lib32/libSM.so.? lib/libSM.so
         [ -e "/usr/lib32/libICE.so" ] || make_symlink /usr/lib32/libICE.so.? lib/libICE.so
