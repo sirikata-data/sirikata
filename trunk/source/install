@@ -315,7 +315,7 @@ elif $WITH_FREEIMAGE; then
                (cd ..;mkdir lib||echo exists;mkdir include||echo exists ;
                cp FreeImage/Dist/* ${DIR}/lib;
                cp FreeImage/Dist/* ${DIR}/include )" && \
-    make_symlink . installed-freeimage || \
+    make_symlink FreeImage installed-freeimage || \
     FAILED="$FAILED freeimage"
 fi
 
@@ -331,7 +331,7 @@ elif $WITH_SDL; then
                patch -p0 < ../SDLkeymouse.patch &&
                make $NUM_PROCS &&
                make install" && \
-    make_symlink . installed-sdl || \
+    make_symlink SDL-1.3.0-4460 installed-sdl || \
     FAILED="$FAILED sdl"
 fi
 
@@ -349,7 +349,7 @@ elif $WITH_ANTLR ; then
                fi) &&
                make $NUM_PROCS &&
                make install" && \
-    make_symlink . installed-antlr || \
+    make_symlink libantlr3c-3.1.3 installed-antlr || \
     FAILED="$FAILED antlr"
 
 fi
@@ -409,7 +409,7 @@ if $USE_ROOT && $WITH_CURL ; then
     case "$DISTRO" in
         debian )
             apt-get install libcurl4-openssl-dev
-            make_symlink . installed-curl
+            make_symlink /usr/lib installed-curl
             WITH_CURL=false
             ;;
     esac
@@ -444,7 +444,7 @@ elif $WITH_OIS ; then
                ./configure --prefix=${DIR} &&
                make $NUM_PROCS &&
                make install" && \
-    make_symlink . installed-ois || \
+    make_symlink ois installed-ois || \
     FAILED="$FAILED ois"
 
 fi
@@ -497,12 +497,13 @@ elif $WITH_OGRE ; then
         ZZIPLIB_LIBS="-L${DIR}/lib -lzzip"
         [ -e "/usr/lib32/libXaw.so" ] || ln -sf /usr/lib32/libXaw.so.* ${DIR}/lib/libXaw.so 2> /dev/null
     fi
+    clean_dir installed-ogre
     user_eval "cd ${DIR} &&
                tar -jxf ogre-v1-6-1.tar.bz2 &&
                cd ogre &&
                patch -p0 < ../ogre.patch &&
                ./bootstrap &&
-               ZZIPLIB_LIBS='${ZZIPLIB_LIBS}' ./configure --enable-threading=semi ${EXTRA_FLAGS} --prefix=${DIR} LDFLAGS=-L${DIR}/installed-freeimage/lib CXXFLAGS=-I${DIR}/installed-freeimage/include &&
+               ZZIPLIB_LIBS='${ZZIPLIB_LIBS}' ./configure --enable-threading=semi ${EXTRA_FLAGS} --prefix=${DIR} LDFLAGS=-L${DIR}/lib CXXFLAGS=-I${DIR}/include &&
                make $NUM_PROCS &&
                make install" && \
     make_symlink ogre installed-ogre || \
@@ -548,7 +549,7 @@ elif $WITH_MONO ; then
                ./configure --prefix=${DIR} && \
                make $NUM_PROCS && \
                make install" && \
-    make_symlink . installed-protobufs || \
+    make_symlink dotnet-protobufs installed-protobufs || \
     FAILED="$FAILED protobufs"
 elif $WITH_PROTOBUFS; then
 # Just install regular protocol buffers from Google
@@ -563,7 +564,7 @@ elif $WITH_PROTOBUFS; then
                make $NUM_PROCS;
                make install;
                cd .." && \
-    make_symlink . installed-protobufs || \
+    make_symlink protobuf-2.1.0 installed-protobufs || \
     FAILED="$FAILED protobufs"
 fi
 
