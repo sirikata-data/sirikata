@@ -8,11 +8,15 @@ INSTALLFLAGS+=--force-32bit
 endif
 
 # Default rule:
-depends: check-architecture minimaldepends installed-mono
+depends: check-architecture optionaldepends
 
-minimaldepends: check-architecture nonroot-dependencies compiled-dependencies installed-protobufs
+minimaldepends: check-architecture nonroot-dependencies compiled-dependencies
 
-fulldepends: check-architecture root-dependencies compiled-dependencies installed-protobufs
+optionaldepends: check-architecture nonroot-dependencies compiled-dependencies optional-dependencies
+
+monooisdepends: check-architecture optionaldepends installed-mono installed-ois
+
+fulldepends: check-architecture root-dependencies compiled-dependencies
 
 awesomium-root: chromium-root
 	$(MAKE) installed-awesomium $(*)
@@ -42,17 +46,15 @@ check-architecture:
 installed-%:
 	./install $(INSTALLFLAGS) $(patsubst installed-%,%,$@)
 
-installed-ois: installed-ogre
-
-installed-ogre: installed-freeimage installed-boost
+installed-ogre: installed-freeimage installed-boost installed-sdl
 
 installed-awesomium: installed-chromium
 
 #####
 
-compiled-dependencies: installed-ois installed-ogre installed-freeimage installed-antlr installed-bullet installed-sdl
+compiled-dependencies: installed-antlr installed-protobufs
 
-optional-dependencies: installed-mono
+optional-dependencies: installed-ogre installed-bullet
 
 nonroot-dependencies: installed-curl installed-boost
 
