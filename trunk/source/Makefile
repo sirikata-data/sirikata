@@ -16,7 +16,7 @@ optionaldepends: check-architecture nonroot-dependencies compiled-dependencies o
 
 monooisdepends: check-architecture optionaldepends installed-mono installed-ois
 
-fulldepends: check-architecture root-dependencies compiled-dependencies
+fulldepends: check-architecture root-dependencies compiled-dependencies optional-dependencies
 
 awesomium-root: chromium-root
 	$(MAKE) installed-awesomium $(*)
