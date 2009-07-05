@@ -229,7 +229,7 @@ fi
 if $USE_ROOT ; then
      case "$DISTRO" in
        debian )
-           apt-get install unzip zip automake1.9 nvidia-cg-toolkit jam g++ libzzip-dev libxt-dev libxaw7-dev libxxf86vm-dev \
+           apt-get install sed unzip zip automake1.9 nvidia-cg-toolkit jam g++ libzzip-dev libxt-dev libxaw7-dev libxxf86vm-dev \
                            libxrandr-dev libfreetype6-dev autoconf libtool libpcre3-dev flex bison patch libbz2-dev gawk \
                            cmake libglu1-mesa-dev tofrodos freeglut3-dev
            ;;
@@ -665,8 +665,21 @@ if $WITH_CHROMIUM || $WITH_CHROMIUMDEPS; then
       #ln -s ../local/lib32/libsmime3.so /usr/lib32/
       #ln -s ../local/lib32/libsqlite3.so /usr/lib32/
       #ln -s ../local/lib32/libssl3.so /usr/lib32/
-      ln -s libcrypto.so.* /usr/local/lib32/libcrypto.so
-      ln -s libssl.so.* /usr/local/lib32/libssl.so 
+      ln -s /usr/lib32/libcrypto.so.* /usr/local/lib32/libcrypto.so
+      ln -s /usr/lib32/libssl.so.* /usr/local/lib32/libssl.so
+      ln -s /usr/lib32/libgtk-x11-2.0.so.? /usr/local/lib32/libgtk-x11-2.0.so 
+      ln -s /usr/lib32/libgdk-x11-2.0.so.? /usr/local/lib32/libgdk-x11-2.0.so 
+      ln -s /usr/lib32/libgdk_pixbuf-2.0.so.? /usr/local/lib32/libgdk_pixbuf-2.0.so 
+      ln -s /usr/lib32/libatk-1.0.so.? /usr/local/lib32/libatk-1.0.so 
+      for lib in gio-2.0.so.0 gdk-x11-2.0.so.0 atk-1.0.so.0 gdk_pixbuf-2.0.so.0 \
+           pangocairo-1.0.so.0 pango-1.0.so.0 pangoft2-1.0.so.0 gthread-2.0.so.0 glib-2.0.so.0 \
+           gobject-2.0.so.0 gmodule-2.0.so.0 glib-2.0.so.0 gtk-x11-2.0.so.0 \
+           cairo.so.2 freetype.so.6 z.so.1 fontconfig.so.1 \
+           X11.so.6 Xrender.so.1 Xext.so.6 gconf-2.so.4; do
+        so=$(echo ${lib} | sed -e "s/^\\(.*\\.so\\)\\..*$/\\1/")
+        ln -s /usr/lib32/lib$lib /usr/local/lib32/lib$so
+      done
+
     fi
     user_eval "cd ${DIR}; mkdir chromium" || true
     if [ \! -e chromium/depot_tools ]; then
