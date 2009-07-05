@@ -271,7 +271,7 @@ function make_symlink {
     TARGET=$1
     LINK_NAME=$2
 
-    user_eval "cd ${DIR}; rm -f $LINK_NAME; ln -fs $TARGET $LINK_NAME"
+    user_eval "cd ${DIR}; rm -f $LINK_NAME; ln -fs $TARGET $LINK_NAME && (touch -m $LINK_NAME || true)"
 }
 
 # Unlike make_symlink, this will delete the contents, if this is not a symlink.
@@ -648,25 +648,30 @@ if $WITH_CHROMIUM; then
                tar -zxf $CHROMIUM_TGZ &&
                mv home/chrome-svn/tarball/chromium .'
     fi
-    #if [ x"${CHROMIUM_DEBUG}" = x ]; then
-    #  echo "Building Chromium in Release. export CHROMIUM_DEBUG=true for debug mode."
-    #  HAMMERFLAGS="$HAMMERFLAGS --mode=Release"
-    #  OUTDIR=Release
-    #else
+    if [ x"${CHROMIUM_REV}" = x ]; then
+      CHROMIUM_REV=19929
+    fi
+    if [ x"${CHROMIUM_DEBUG}" = xtrue ]; then
+      echo "*** Building Chromium in Debug mode"
       HAMMERFLAGS="$HAMMERFLAGS --mode=Debug"
       OUTDIR=Debug
-    #fi
+    else
+      echo "Building Chromium in Release. export CHROMIUM_DEBUG=true for debug mode."
+      HAMMERFLAGS="$HAMMERFLAGS --mode=Release"
+      OUTDIR=Release
+    fi
     if [ -e chromium/chromium ] && [ -e chromium/depot_tools ]; then
       user_eval "cd ${DIR}/chromium;"'
                  export PATH="$PWD/depot_tools:$PATH";
-                 cd chromium;
-                 gclient sync --force --revision src@18798 && '"
+                 cd chromium; '"
+                 gclient sync --force --revision src@${CHROMIUM_REV} &&
                  ( patch -R --dry-run -p0 < ${DIR}/chromium-mainthread.patch ||
                  patch -N -p0 < ${DIR}/chromium-mainthread.patch ) &&
                  export CHROMIUM_ROOT="'"$PWD"'" &&
                  cd src/build &&
                  hammer ${HAMMERFLAGS} chrome" && \
-      make_symlink chromium/chromium/src/sconsbuild/$OUTDIR installed-chromium || \
+      make_symlink chromium/chromium/src/sconsbuild/$OUTDIR installed-chromium && \
+      echo ${OUTDIR} > chromium/compilemode.txt || \
       export FAILED="$FAILED chromium"
     else
       export FAILED="$FAILED chromium"
@@ -676,9 +681,9 @@ fi
 if $WITH_AWESOMIUM; then
     echo "Installing Awesomium"
     clean_dir installed-awesomium
-    user_eval "ln -fs ${DIR}/chromium ../externals/ &&
-               cd ../externals/awesomium/Awesomium/src &&
-               make CHROMIUMDIR=${DIR}/chromium/chromium CHROMIUMLIBPATH=${DIR}/installed-chromium/lib" && \
+    user_eval "cd ../externals/awesomium/Awesomium/src &&
+               make clean &&
+               make ${NUM_PROCS} CHROMIUMDIR=${DIR}/chromium/chromium CHROMIUMMODE=`cat chromium/compilemode.txt`" && \
     make_symlink ../externals/awesomium/Awesomium installed-awesomium || \
     FAILED="$FAILED awesomium"
 fi

@@ -1,7 +1,8 @@
 
-ifeq ($(ARCH),)
-ARCH=$(shell uname -m)
-endif
+# For now, default to 32-bit
+#ifeq ($(ARCH),)
+#ARCH=$(shell uname -m)
+#endif
 
 ifneq ($(ARCH),x86_64)
 INSTALLFLAGS+=--force-32bit
@@ -44,6 +45,7 @@ check-architecture:
 
 ##### Rules to install each package
 installed-%:
+	$(MAKE) check-architecture $(MFLAGS)
 	./install $(INSTALLFLAGS) $(patsubst installed-%,%,$@)
 
 installed-ogre: installed-freeimage installed-boost installed-sdl
