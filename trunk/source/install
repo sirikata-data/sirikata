@@ -615,9 +615,10 @@ if $WITH_CHROMIUM || $WITH_CHROMIUMDEPS; then
       echo "http://code.google.com/p/chromium/wiki/LinuxBuildInstructionsPrerequisites"
       case "$DISTRO" in
         debian )
-            apt-get install subversion pkg-config python perl g++ g++-multilib \
-                            bison flex gperf libnss3-dev libgtk2.0-dev libnspr4-0d libasound2-dev \
-                            libnspr4-dev msttcorefonts libgconf2-dev libcairo2-dev libdbus-1-dev
+            apt-get install subversion pkg-config python perl g++ g++-multilib
+            apt-get install bison flex gperf libnss3-dev libgtk2.0-dev libnspr4-0d libasound2-dev \
+            apt-get install libnspr4-dev msttcorefonts libgconf2-dev libcairo2-dev libdbus-1-dev
+            apt-get install liborbit2-dev libpopt-dev orbit2 
             ;;
         fedora )
             yum install subversion pkgconfig python perl gcc-c++ bison \
@@ -627,6 +628,44 @@ if $WITH_CHROMIUM || $WITH_CHROMIUMDEPS; then
             rpm --force -Uvh /var/cache/yum/updates/packages/pango-devel-1.22.3-1.fc10.i386.rpm
             ;;
       esac
+      if $FORCE_32BIT; then
+        if ! [ -e /usr/lib32/libnss3.so -o -e /usr/local/lib32/libnss3.so ] ; then
+          #------------from google's script
+          mkdir -p /usr/local/lib32
+          for deb in nspr/libnspr4-0d_4.7.1~beta2-0ubuntu1_i386.deb \
+                     nss/libnss3-1d_3.12.0~beta3-0ubuntu1_i386.deb \
+                     sqlite3/libsqlite3-0_3.4.2-2_i386.deb; do
+            WORKDIR=$(mktemp -d -p /tmp)
+            pushd ${WORKDIR}
+            letter=$(echo ${deb} | sed -e "s/^\\(.\\).*$/\\1/")
+            curl -O http://mirrors.kernel.org/ubuntu/pool/main/${letter}/${deb}
+            ar x $(basename ${deb})
+            tar xf data.tar.gz
+            for lib in usr/lib/* ; do
+              libbase=$(basename ${lib})
+              mv ${lib} /usr/local/lib32/${libbase}
+              so=$(echo ${libbase} | sed -e "s/^\\(.*\\.so\\)\\..*$/\\1/")
+              if [ ${so} != ${libbase} ] ; then
+                ln -s -f ${libbase} /usr/local/lib32/${so}
+              fi
+            done
+            popd
+            rm -rf ${WORKDIR}
+          done
+          #-------------------------
+        fi
+      fi
+
+      #ln -s ../local/lib32/libnss3.so /usr/lib32/
+      #ln -s ../local/lib32/libnspr4.so /usr/lib32/
+      #ln -s ../local/lib32/libnssutil3.so /usr/lib32/
+      #ln -s ../local/lib32/libplc4.so /usr/lib32/
+      #ln -s ../local/lib32/libplds4.so /usr/lib32/
+      #ln -s ../local/lib32/libsmime3.so /usr/lib32/
+      #ln -s ../local/lib32/libsqlite3.so /usr/lib32/
+      #ln -s ../local/lib32/libssl3.so /usr/lib32/
+      ln -s libcrypto.so.* /usr/local/lib32/libcrypto.so
+      ln -s libssl.so.* /usr/local/lib32/libssl.so 
     fi
     user_eval "cd ${DIR}; mkdir chromium" || true
     if [ \! -e chromium/depot_tools ]; then
