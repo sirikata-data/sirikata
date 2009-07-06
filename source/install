@@ -631,6 +631,12 @@ if $WITH_CHROMIUM || $WITH_CHROMIUMDEPS; then
             rpm --force -Uvh /var/cache/yum/updates/packages/pango-devel-1.22.3-1.fc10.i386.rpm
             ;;
       esac
+
+      # make sure /usr/local/lib32 exists
+      if ! [ -e /usr/local/lib32 ]; then
+        mkdir /usr/local/lib32
+      fi
+
       if $FORCE_32BIT; then
         if ! [ -e /usr/lib32/libnss3.so -o -e /usr/local/lib32/libnss3.so ] ; then
           #------------from google's script
@@ -677,7 +683,7 @@ if $WITH_CHROMIUM || $WITH_CHROMIUMDEPS; then
            pangocairo-1.0.so.0 pango-1.0.so.0 pangoft2-1.0.so.0 gthread-2.0.so.0 glib-2.0.so.0 \
            gobject-2.0.so.0 gmodule-2.0.so.0 glib-2.0.so.0 gtk-x11-2.0.so.0 \
            cairo.so.2 freetype.so.6 z.so.1 fontconfig.so.1 \
-           X11.so.6 Xrender.so.1 Xext.so.6 gconf-2.so.4; do
+           X11.so.6 Xrender.so.1 Xext.so.6 gconf-2.so.4 asound.so.2; do
         so=$(echo ${lib} | sed -e "s/^\\(.*\\.so\\)\\..*$/\\1/")
         ln -s /usr/lib32/lib$lib /usr/local/lib32/lib$so
       done
