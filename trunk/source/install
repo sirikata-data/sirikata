@@ -726,8 +726,7 @@ if $WITH_CHROMIUM; then
                  export PATH="$PWD/depot_tools:$PATH";
                  cd chromium; '"
                  gclient sync --force --revision src@${CHROMIUM_REV} &&
-                 ( patch -R --dry-run -p0 < ${DIR}/chromium-mainthread.patch ||
-                 patch -N -p0 < ${DIR}/chromium-mainthread.patch ) &&
+                 ( patch -N -p0 < ${DIR}/chromium-mainthread.patch || true ) &&
                  export CHROMIUM_ROOT="'"$PWD"'" &&
                  cd src/build &&
                  hammer ${HAMMERFLAGS} chrome" && \
