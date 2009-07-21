@@ -18,6 +18,7 @@ FORCE_32BIT=false
 WITH_BOOST=false
 WITH_FREEIMAGE=false
 WITH_CURL=false
+WITH_SQLITE=false
 WITH_PROTOBUFS=false
 WITH_OIS=false
 WITH_OGRE=false
@@ -40,13 +41,14 @@ Usage: $0 [--use-root] [--user <username>] [-j<num-procs>]
            [--installed-bullet <path>]
            [--installed-freeimage <path>]
            [--installed-curl <path>]
+           [--installed-sqlite <path>]
            [--installed-protobufs <path>]
            [--installed-ogre <path>]
            [--installed-ois <path>]
            <package> ...
 
 Packages include:
-	all, boost, freeimage, curl, protobufs, sdl, ois, ogre, mono,
+	all, boost, freeimage, curl, sqlite, protobufs, sdl, ois, ogre, mono,
 	bullet, awesomium, --use-root chromiumdeps, chromium
 
 You must run the script with root privileges (sudo) if you specify --use-root.
@@ -72,6 +74,10 @@ do
           ;;
       curl)
           WITH_CURL=true
+          SHOW_USAGE=false
+          ;;
+      sqlite)
+          WITH_SQLITE=true
           SHOW_USAGE=false
           ;;
       protobufs)
@@ -118,6 +124,7 @@ do
           WITH_BOOST=true
           WITH_FREEIMAGE=true
           WITH_CURL=true
+          WITH_SQLITE=true
           WITH_PROTOBUFS=true
           WITH_OIS=true
           WITH_OGRE=true
@@ -151,6 +158,10 @@ do
       --installed-curl )
           shift
           INSTALLED_CURL="$1"
+          ;;
+      --installed-sqlite )
+          shift
+          INSTALLED_SQLITE="$1"
           ;;
       --installed-protobufs )
           shift
@@ -448,6 +459,40 @@ if $WITH_CURL ; then
                make $NUM_PROCS &&
                make install" || \
     FAILED="$FAILED curl"
+fi
+
+
+
+################################################################################################################################
+# Install SQLITE
+################################################################################################################################
+
+if [[ -n "$INSTALLED_SQLITE" ]] ; then
+    make_symlink $INSTALLED_SQLITE installed-sqlite
+    WITH_SQLITE=false
+fi
+if $USE_ROOT && $WITH_SQLITE ; then
+  if ! $FORCE_32BIT; then
+    echo "Installing SQLITE system-wide..."
+    case "$DISTRO" in
+        debian )
+            apt-get install libsqlite3-dev
+            make_symlink /usr/lib installed-sqlite
+            WITH_SQLITE=false
+            ;;
+    esac
+  fi
+fi
+if $WITH_SQLITE ; then
+    echo "Installing SQLITE..."
+    clean_dir installed-sqlite
+    user_eval "cd ${DIR} &&
+               tar -zxf sqlite-amalgamation-3.6.16.tar.gz &&
+               cd sqlite-3.6.16 &&
+               ./configure --prefix=${DIR}/installed-sqlite &&
+               make $NUM_PROCS &&
+               make install" || \
+    FAILED="$FAILED sqlite"
 fi
 
 
