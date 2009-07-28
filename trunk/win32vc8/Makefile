@@ -7,6 +7,7 @@ minimaldepends:
 	unzip -o libantlr*.zip
 	unzip -o ogre*.zip
 	unzip -o SDL*.zip
+	unzip -o IronPython*.zip
 	unzip -o ois*.zip
 	unzip -o bullet*.zip
 	unzip -o awesomium*.zip
