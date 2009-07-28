@@ -1,15 +1,16 @@
 
 minimaldepends:
-	unzip dotnet-protobufs*.zip
-	unzip FreeImage-*.zip
-	unzip curl*.zip
-	unzip boost*.zip
-	unzip libantlr*.zip
-	unzip ogre*.zip
-	unzip SDL*.zip
-	unzip ois*.zip
-	unzip bullet*.zip
-	unzip awesomium*.zip
+	unzip -o dotnet-protobufs*.zip
+	unzip -o FreeImage-*.zip
+	unzip -o curl*.zip
+	unzip -o boost*.zip
+	unzip -o libantlr*.zip
+	unzip -o ogre*.zip
+	unzip -o SDL*.zip
+	unzip -o ois*.zip
+	unzip -o bullet*.zip
+	unzip -o awesomium*.zip
+	unzip -o sqlite*.zip
 
 depends: minimaldepends
 
