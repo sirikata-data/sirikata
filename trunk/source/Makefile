@@ -1,11 +1,20 @@
 
-# For now, default to 64-bit
 ifeq ($(ARCH),)
-ARCH=$(shell uname -m)
+REALARCH=$(shell uname -m)
+ifeq ($(REALARCH),x86_64)
+ARCH=i386
+else
+ARCH=$(REALARCH)
+endif
+endif
+ifeq ($(shell id -u),0)
+$(error Sorry, this script cannot be directly run as root.  Run "make fulldepends" instead)
 endif
 
 ifneq ($(ARCH),x86_64)
 INSTALLFLAGS+=--force-32bit
+CHROMIUM_ROOT_DEPS=chromium-root
+AWESOMIUM_DEPS=installed-awesomium
 endif
 
 # Default rule:
@@ -13,7 +22,7 @@ depends: check-architecture optionaldepends
 
 minimaldepends: check-architecture nonroot-dependencies compiled-dependencies
 
-optionaldepends: check-architecture nonroot-dependencies compiled-dependencies optional-dependencies
+optionaldepends: check-architecture nonroot-dependencies optional-dependencies compiled-dependencies
 
 monooisdepends: check-architecture optionaldepends installed-mono installed-ois
 
@@ -23,7 +32,7 @@ awesomium-root: chromium-root
 	$(MAKE) installed-awesomium $(*)
 
 chromium-root:
-	sudo ./install $(INSTALLFLAGS) --use-root --user `whoami` chromiumdeps
+	sudo $(filter -j%,$(MFLAGS)) ./install $(INSTALLFLAGS) --use-root --user `whoami` chromiumdeps
 	$(MAKE) installed-chromium $(*)
 
 check-architecture:
@@ -46,7 +55,7 @@ check-architecture:
 ##### Rules to install each package
 installed-%:
 	$(MAKE) check-architecture $(MFLAGS)
-	./install $(INSTALLFLAGS) $(patsubst installed-%,%,$@)
+	$(filter -j%,$(MFLAGS)) ./install $(INSTALLFLAGS) $(patsubst installed-%,%,$@)
 
 installed-ogre: installed-freeimage installed-boost installed-sdl
 
@@ -56,12 +65,12 @@ installed-awesomium: installed-chromium
 
 compiled-dependencies: installed-antlr installed-protobufs
 
-optional-dependencies: installed-ogre installed-bullet
+optional-dependencies: installed-ogre installed-bullet installed-mono $(AWESOMIUM_DEPS)
 
 nonroot-dependencies: installed-curl installed-boost
 
-root-dependencies:
-	sudo ./install $(INSTALLFLAGS) --use-root --user `whoami` boost curl
+root-dependencies: nonroot-dependencies $(CHROMIUM_ROOT_DEPS)
+	sudo ./install $(INSTALLFLAGS) --use-root --user `whoami`
 
 clean:
 	@echo "Clean command:"

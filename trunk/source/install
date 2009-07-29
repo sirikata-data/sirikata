@@ -6,7 +6,7 @@
 
 USE_ROOT=false
 USER=`whoami`
-USER_SHELL="$SHELL"
+USER_SHELL="/bin/bash"
 SAME_USER=true
 NUM_PROCS=-j2
 DIR=`pwd`
@@ -184,7 +184,7 @@ do
           ;;
       --force-32bit )
           if [ x"$platform" = x"x86_64" ]; then
-              USER_SHELL="setarch i386 $SHELL"
+              USER_SHELL="setarch i386 $USER_SHELL"
               FORCE_32BIT=true
           fi
           ;;
@@ -269,7 +269,7 @@ function user_eval {
         popd >/dev/null
         return $RET
     else
-        su - $USER $USER_SHELL -c "export OLDPATH='$OLDPATH'; export PATH='$PATH'; cd ${DIR}; $1"
+        su - $USER -s /usr/bin/env -- $USER_SHELL -c "export OLDPATH='$OLDPATH'; export PATH='$PATH'; cd ${DIR}; $1"
         return $?
     fi
 }
@@ -606,13 +606,20 @@ if [[ -n "$INSTALLED_MONO" ]] ; then
 elif $WITH_MONO ; then
     echo "Installing MONO..."
     clean_dir installed-mono
-    user_eval "cd ${DIR} &&
-               tar -jxf mono-2.4.tar.bz2 &&
-               cd mono-2.4 &&
+    MONOSUCCESS=true
+    user_eval "cd ${DIR} && tar -jxf mono-2.4.tar.bz2" || MONOSUCCESS=false
+    if $MONOSUCCESS && $FORCE_32BIT; then
+        user_eval "cd ${DIR} && cp glibconfig-i386.h mono-2.4/glibconfig.h" || MONOSUCCESS=false
+    fi
+    if $MONOSUCCESS; then
+        user_eval "cd mono-2.4 &&
                ./configure --prefix=${DIR}/installed-mono --disable-nls &&
                make $NUM_PROCS &&
-               make install" || \
-    FAILED="$FAILED mono"
+               make install" || MONOSUCCESS=false
+    fi
+    if [ $MONOSUCCESS = false ]; then
+        FAILED="$FAILED mono"
+    fi
 fi
 
 ################################################################################################################################
@@ -622,7 +629,8 @@ user_eval "cd ${DIR} && unzip -o IronPython-2.0.1.zip";
 
 if [[ -n "$INSTALLED_PROTOBUFS" ]] ; then
     make_symlink $INSTALLED_PROTOBUFS installed-protobufs
-elif $WITH_MONO ; then
+elif $WITH_PROTOBUFS; then
+  if [ -e "${DIR}/installed-mono/bin/gmcs" ] ; then
     echo "Installing DotNet-Protobufs..."
     user_eval "cd ${DIR} &&
                tar -zxf dotnet-protobufs.f0b299db576712173d00cacf0fd7c7583eb8ed25.tar.gz &&
@@ -636,9 +644,9 @@ elif $WITH_MONO ; then
                make $NUM_PROCS && \
                make install" || \
     FAILED="$FAILED protobufs"
-elif $WITH_PROTOBUFS; then
+  else
 # Just install regular protocol buffers from Google
-   echo "Installing Protobufs without mono..."
+    echo "Installing Protobufs without mono..."
     user_eval "cd ${DIR};
                wget -c http://protobuf.googlecode.com/files/protobuf-2.1.0.tar.gz;
                tar -xzvf protobuf-2.1.0.tar.gz;
@@ -650,6 +658,7 @@ elif $WITH_PROTOBUFS; then
                echo=/bin/echo make install;
                cd .." || \
     FAILED="$FAILED protobufs"
+  fi
 fi
 
 ################################################################################################################################
