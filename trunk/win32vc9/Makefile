@@ -4,6 +4,7 @@ minimaldepends:
 	unzip -o FreeImage-*.zip
 	unzip -o curl*.zip
 	unzip -o libantlr*.zip
+	unzip -o mono*.zip
 	unzip -o boost*.zip
 	unzip -o ogre*.zip
 	unzip -o SDL*.zip

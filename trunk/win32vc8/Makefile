@@ -9,6 +9,7 @@ minimaldepends:
 	unzip -o SDL*.zip
 	unzip -o IronPython*.zip
 	unzip -o ois*.zip
+	unzip -o mono*.zip
 	unzip -o bullet*.zip
 	unzip -o awesomium*.zip
 	unzip -o sqlite*.zip
