@@ -63,7 +63,7 @@ installed-awesomium: installed-chromium
 
 #####
 
-compiled-dependencies: installed-antlr installed-protobufs
+compiled-dependencies: installed-antlr installed-protobufs installed-sqlite
 
 optional-dependencies: installed-ogre installed-bullet installed-mono $(AWESOMIUM_DEPS)
 
