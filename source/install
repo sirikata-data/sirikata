@@ -617,6 +617,9 @@ elif $WITH_MONO ; then
                make $NUM_PROCS &&
                make install" || MONOSUCCESS=false
     fi
+    if $MONOSUCCESS && $FORCE_32BIT; then
+        user_eval "cd ${DIR} && cp glibconfig-i386.h include/glibconfig.h" || MONOSUCCESS=false
+    fi
     if [ $MONOSUCCESS = false ]; then
         FAILED="$FAILED mono"
     fi
