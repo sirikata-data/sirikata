@@ -647,7 +647,7 @@ elif $WITH_PROTOBUFS; then
                ./configure --prefix=${DIR}/installed-protobufs && \
                make $NUM_PROCS && \
                make install &&
-               ( ls ${DIR}/installed-protobufs/lib/Google.ProtocolBuffers.dll || cp csharp/Google.ProtocolBuffers.dll ${DIR}/installed-protobufs/lib/ || find csharp/ProtocolBuffers -name *.cs |xargs ../installed-mono/bin/gmcs -target:library -out:${DIR}/installed-protobufs/lib/Google.ProtocolBuffers.dll ) " || \
+               ( cp csharp/Google.ProtocolBuffers.dll ${DIR}/installed-protobufs/bin/ || find csharp/ProtocolBuffers -name *.cs |xargs ../installed-mono/bin/gmcs -target:library -out:${DIR}/installed-protobufs/bin/Google.ProtocolBuffers.dll ) " || \
     FAILED="$FAILED protobufs"
 # now this is in the makefile thanks to makefile_am_fix.patch              
   else
