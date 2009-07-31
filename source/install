@@ -638,12 +638,13 @@ elif $WITH_PROTOBUFS; then
                patch -p1 -N < ../protobufs_patches/build_fix.patch &&
                patch -p1 -N < ../protobufs_patches/csharp_generator_generic_namespace_alias.patch &&
                patch -p0 -N < ../protobufs_patches/new_list_empty.patch &&
-               find csharp/ProtocolBuffers -name *.cs |xargs ../installed-mono/bin/gmcs -target:library -out:${DIR}/lib/Google.ProtocolBuffers.dll && \
+               patch -p0 -N < ../protobufs_patches/makefile_am_fix.patch &&
                ./autogen.sh && \
                ./configure --prefix=${DIR}/installed-protobufs && \
                make $NUM_PROCS && \
                make install" || \
     FAILED="$FAILED protobufs"
+# now this is in the makefile thanks to makefile_am_fix.patch              find csharp/ProtocolBuffers -name *.cs |xargs ../installed-mono/bin/gmcs -target:library -out:${DIR}/lib/Google.ProtocolBuffers.dll && \
   else
 # Just install regular protocol buffers from Google
     echo "Installing Protobufs without mono..."

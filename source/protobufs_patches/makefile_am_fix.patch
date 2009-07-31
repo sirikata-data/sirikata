@@ -1,6 +1,6 @@
 --- csharp/Makefile.am.bak	2009-07-30 23:30:24.000000000 -0700
-+++ csharp/Makefile.am	2009-07-30 23:35:48.000000000 -0700
-@@ -5,74 +5,85 @@
++++ csharp/Makefile.am	2009-07-30 23:51:10.000000000 -0700
+@@ -5,78 +5,90 @@
  noinst_SCRIPTS = Google.ProtocolBuffers.dll
  
  Google.ProtocolBuffers.dll_sources = \
@@ -151,3 +151,9 @@
          $(Google.ProtocolBuffers.dll_sources) -keyfile:Google.ProtocolBuffers.snk -r:System.dll
  
  install-data-local: Google.ProtocolBuffers.dll
+-	gacutil -i Google.ProtocolBuffers.dll -package google
++	cp Google.ProtocolBuffers.dll ${prefix}/lib
++#gacutil -i Google.ProtocolBuffers.dll -package google
+ 
+ EXTRA_DIST = $(Google.ProtocolBuffers.dll_sources) google-pb.pc.in
+ 
