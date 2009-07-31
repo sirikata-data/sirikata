@@ -568,11 +568,11 @@ elif $WITH_OGRE ; then
         [ -e "/usr/lib32/libICE.so" ] || make_symlink /usr/lib32/libICE.so.? lib/libICE.so
         [ -e "/usr/lib32/libstdc++.so" ] || make_symlink /usr/lib32/libstdc++.so.6 lib/libstdc++.so
         [ -e "/usr/lib32/libgthread-2.0.so" ] || make_symlink /usr/lib32/libgthread-2.0.so.* lib/libgthread-2.0.so
-        [ -e "/usr/lib32/libGLU.so" ] || make_symlink /usr/lib32/libGLU.so.* lib/libGLU.so
+        [ -e "/usr/lib32/libGLU.so" ] || make_symlink /usr/lib32/libGLU.so.? lib/libGLU.so
         [ -e "/usr/lib32/libssl.so" ] || make_symlink /usr/lib32/libssl.so.* lib/libssl.so
         [ -e "/usr/lib32/libcrypto.so" ] || make_symlink /usr/lib32/libcrypto.so.* lib/libcrypto.so
         [ -e "/usr/lib32/libglut.so" ] || make_symlink /usr/lib32/libglut.so.* lib/libglut.so
-        [ -e "/usr/lib32/libfreetype.so" ] || make_symlink /usr/lib32/libfreetype.so.6 lib/libfreetype.so
+        [ -e "/usr/lib32/libfreetype.so" ] || make_symlink /usr/lib32/libfreetype.so.? lib/libfreetype.so
         [ -e "${DIR}/lib/libCg.so" ] || [ -e "/usr/lib32/libCg.so" ] || [ -e "/usr/local/lib32/libCg.so" ] || \
             user_eval "echo Installing 32-bit Nvidia Cg Toolkit;
                        cd ${DIR} &&
