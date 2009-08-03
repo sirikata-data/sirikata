@@ -61,6 +61,10 @@ installed-ogre: installed-freeimage installed-boost installed-sdl
 
 installed-awesomium: installed-chromium
 
+$(FORCE) $(addprefix installed-,$(FORCE)): force
+
+force:
+
 #####
 
 compiled-dependencies: installed-antlr installed-protobufs installed-sqlite
