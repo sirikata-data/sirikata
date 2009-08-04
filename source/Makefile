@@ -73,8 +73,11 @@ optional-dependencies: installed-ogre installed-bullet installed-mono $(AWESOMIU
 
 nonroot-dependencies: installed-curl installed-boost
 
-root-dependencies: nonroot-dependencies $(CHROMIUM_ROOT_DEPS)
+root-dependencies-install :
 	sudo ./install $(INSTALLFLAGS) --use-root --user `whoami`
+
+root-dependencies: root-dependencies-install nonroot-dependencies $(CHROMIUM_ROOT_DEPS)
+
 
 clean:
 	@echo "Clean command:"
