@@ -3,6 +3,7 @@ minimaldepends:
 	tar -jx --file dotnet-protobufs*.bz2 && \
 	tar -jx --file FreeImage-*.bz2 && \
 	tar -jx --file curl*.bz2 && \
+	tar -jx --file glib-2.0.tar.bz2 && \
 	tar -jx --file boost*.bz2 && \
 	tar -jx --file ois*.bz2 && \
 	unzip -o SDL-1.3*.zip && \
