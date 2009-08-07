@@ -20,6 +20,8 @@ endif
 # Default rule:
 depends: check-architecture optionaldepends
 
+minimalrootdepends: check-architecture minimal-root-dependencies
+
 minimaldepends: check-architecture nonroot-dependencies compiled-dependencies
 
 optionaldepends: check-architecture nonroot-dependencies optional-dependencies compiled-dependencies
@@ -75,6 +77,9 @@ nonroot-dependencies: installed-curl installed-boost
 
 root-dependencies-install :
 	sudo ./install $(INSTALLFLAGS) --use-root --user `whoami`
+
+
+minimal-root-dependencies: root-dependencies-install nonroot-dependencies
 
 root-dependencies: root-dependencies-install nonroot-dependencies $(CHROMIUM_ROOT_DEPS)
 
