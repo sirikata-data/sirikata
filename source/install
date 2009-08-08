@@ -407,6 +407,7 @@ if $USE_ROOT && $WITH_BOOST; then
                 apt-get install libboost-program_options1.39-dev || apt-get install libboost-program_options1.38-dev || apt-get install libboost-program_options1.37-dev || apt-get install libboost-program_options1.36-dev
                 apt-get install libboost-thread1.39-dev || apt-get install libboost-thread1.38-dev || apt-get install libboost-thread1.37-dev || apt-get install libboost-thread1.36-dev
                 apt-get install libboost-math1.39-dev || apt-get install libboost-math1.38-dev || apt-get install libboost-math1.37-dev || apt-get install libboost-math1.36-dev
+                apt-get install libboost-date-time1.39-dev || apt-get install libboost-date-time1.38-dev || apt-get install libboost-date-time1.37-dev || apt-get install libboost-date-time1.36-dev
                 make_symlink /usr/lib installed-boost
                 PREFIX_BOOST=false
                 WITH_BOOST=false
@@ -421,7 +422,7 @@ if $WITH_BOOST ; then
     user_eval "cd ${DIR} &&
                tar -jxf boost_1_37_0.tar.bz2 &&
                cd boost_1_37_0 &&
-               ./configure --without-icu --with-libraries=system,program_options,thread,filesystem,regex --prefix=${DIR}/installed-boost &&
+               ./configure --without-icu --with-libraries=system,program_options,thread,filesystem,regex,date_time --prefix=${DIR}/installed-boost &&
                cat Makefile | sed -e s/LIBS=$/LIBS=$NUM_PROCS/ > Makefile_multiproc &&
                make $NUM_PROCS -f Makefile_multiproc &&
                make install" || \
