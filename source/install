@@ -291,6 +291,23 @@ function clean_dir {
     user_eval "cd ${DIR}; rm -f ${DIRECTORY} 2>/dev/null; rm -rf ${DIRECTORY}"
 }
 
+
+################################################################################################################################
+# Finds a useable CURL binary, either from the system or our installed-curl, setting CURL_BIN.
+################################################################################################################################
+
+function find_curl {
+    local installed_path=`pwd`+"/installed-curl/bin/curl"
+    if [[ -e $installed_path ]] ; then
+        CURL_BIN=$installed_path
+    elif [[ -n `which curl` ]] ; then
+        CURL_BIN=`which curl`
+    else
+        echo "Couldn't find curl."
+        exit -1
+    fi
+}
+
 user_eval "cd ${DIR}; mkdir ${DIR}/include >& /dev/null || touch ${DIR}/include"
 user_eval "cd ${DIR}; mkdir ${DIR}/lib >& /dev/null || touch ${DIR}/lib"
 
@@ -550,6 +567,7 @@ if [[ -n "$INSTALLED_OGRE" ]] ; then
 elif $WITH_OGRE ; then
     echo "Installing Ogre..."
     if $FORCE_32BIT; then
+        find_curl
         [ -e "${DIR}/lib/libzzip.so" ] || [ -e "/usr/lib32/libzzip.so" ] || \
             user_eval "echo Installing 32-bit ZZIP;
                        cd ${DIR};
@@ -578,7 +596,7 @@ elif $WITH_OGRE ; then
             user_eval "echo Installing 32-bit Nvidia Cg Toolkit;
                        cd ${DIR} &&
                        mkdir temp-extract; cd temp-extract &&
-                       curl -o cg-x86.tgz http://developer.download.nvidia.com/cg/Cg_2.2/Cg-2.2_April2009_x86.tgz &&
+                       ${CURL_BIN} -o cg-x86.tgz http://developer.download.nvidia.com/cg/Cg_2.2/Cg-2.2_April2009_x86.tgz &&
                        tar -zxf cg-x86.tgz &&
                        mv usr/lib/libCg.so ../lib/ &&
                        (mkdir ../include/Cg || true) &&
@@ -702,13 +720,14 @@ if $WITH_CHROMIUM || $WITH_CHROMIUMDEPS; then
         if ! [ -e /usr/lib32/libnss3.so -o -e /usr/local/lib32/libnss3.so ] ; then
           #------------from google's script
           mkdir -p /usr/local/lib32
+          find_curl # make sure curl is available
           for deb in nspr/libnspr4-0d_4.7.1~beta2-0ubuntu1_i386.deb \
                      nss/libnss3-1d_3.12.0~beta3-0ubuntu1_i386.deb \
                      sqlite3/libsqlite3-0_3.4.2-2_i386.deb; do
             WORKDIR=$(mktemp -d -p /tmp)
             pushd ${WORKDIR}
             letter=$(echo ${deb} | sed -e "s/^\\(.\\).*$/\\1/")
-            curl -O http://mirrors.kernel.org/ubuntu/pool/main/${letter}/${deb}
+            user_eval "${CURL_BIN} -O http://mirrors.kernel.org/ubuntu/pool/main/${letter}/${deb}"
             ar x $(basename ${deb})
             tar xf data.tar.gz
             for lib in usr/lib/* ; do
