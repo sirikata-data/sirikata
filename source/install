@@ -297,7 +297,7 @@ function clean_dir {
 ################################################################################################################################
 
 function find_curl {
-    local installed_path=`pwd`+"/installed-curl/bin/curl"
+    local installed_path="@{DIR}/installed-curl/bin/curl"
     if [[ -e $installed_path ]] ; then
         CURL_BIN=$installed_path
     elif [[ -n `which curl` ]] ; then
