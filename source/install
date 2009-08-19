@@ -634,7 +634,7 @@ elif $WITH_MONO ; then
     if $MONOSUCCESS; then
         user_eval "cd mono-2.4 &&
                ./configure --prefix=${DIR}/installed-mono --disable-nls &&
-               make $NUM_PROCS &&
+               make &&
                make install" || MONOSUCCESS=false
     fi
     if $MONOSUCCESS && $FORCE_32BIT; then
