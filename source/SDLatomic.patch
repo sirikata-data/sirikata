@@ -1,0 +1,11 @@
+--- src/atomic/linux/SDL_atomic.c	2009-08-20 21:12:50.000000000 -0700
++++ src/atomic/linux/SDL_atomic.c	2009-08-21 00:11:31.000000000 -0700
+@@ -83,7 +83,7 @@
+ #define nativeSubtractThenFetch16(ptr, value) 		(__sync_sub_and_fetch(ptr, value))
+ #endif
+ 
+-#ifdef __GCC_HAVE_SYNC_COMPARE_AND_SWAP_4
++#if 1//def __GCC_HAVE_SYNC_COMPARE_AND_SWAP_4
+ #define HAVE_ALL_32_BIT_OPS
+ 
+ #define nativeExchange32(ptr, value)			(__sync_lock_test_and_set(ptr, value))
