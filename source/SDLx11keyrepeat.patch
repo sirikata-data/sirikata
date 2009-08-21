@@ -1,0 +1,70 @@
+Index: src/video/x11/SDL_x11events.c
+===================================================================
+--- src/video/x11/SDL_x11events.c	(revision 4685)
++++ src/video/x11/SDL_x11events.c	(working copy)
+@@ -30,17 +30,25 @@
+ #include "../../events/SDL_events_c.h"
+ #include "../../events/SDL_mouse_c.h"
+ 
++/// nextxevent is a read/write parameter.
+ static void
+-X11_DispatchEvent(_THIS)
++X11_DispatchEvent(_THIS, XEvent *nextxevent, SDL_bool more_events)
+ {
+     SDL_VideoData *videodata = (SDL_VideoData *) _this->driverdata;
+     SDL_WindowData *data;
+     XEvent xevent;
+     int i;
+ 
+-    SDL_zero(xevent);           /* valgrind fix. --ryan. */
+-    XNextEvent(videodata->display, &xevent);
++    xevent = *nextxevent;
+ 
++    SDL_zero(*nextxevent);           /* valgrind fix. --ryan. */
++
++    if (more_events) {
++        XNextEvent(videodata->display, nextxevent);
++    } else {
++        nextxevent = NULL;
++    }
++
+     /* filter events catchs XIM events and sends them to the correct
+        handler */
+     if (XFilterEvent(&xevent, None) == True) {
+@@ -226,6 +234,18 @@
+ #ifdef DEBUG_XEVENTS
+             printf("KeyRelease (X11 keycode = 0x%X)\n", xevent.xkey.keycode);
+ #endif
++            if (nextxevent) {
++                if (nextxevent->type == KeyPress &&
++                    nextxevent->xkey.keycode == keycode) {
++                    // sometimes these events are separated by 1 or 2 ticks
++                    if (nextxevent->xkey.time <= (xevent.xkey.time+10)) {
++                        break; // AutoRepeat keyrelease/keypress pair.
++                    } else {
++                        printf("KeyRelease/KeyPress combo close match! %d %d\n",
++                               nextxevent->xkey.time, xevent.xkey.time);
++                    }
++                }
++            }
+             SDL_SendKeyboardKey(videodata->keyboard, SDL_RELEASED,
+                                 videodata->key_layout[keycode]);
+         }
+@@ -412,9 +432,15 @@
+         }
+     }
+ 
++    XEvent xevent;
++    SDL_bool more_events = X11_Pending(data->display);
++    if (more_events) {
++        XNextEvent(data->display, &xevent);
++    }
+     /* Keep processing pending events */
+-    while (X11_Pending(data->display)) {
+-        X11_DispatchEvent(_this);
++    while (more_events) {
++        more_events = X11_Pending(data->display);
++        X11_DispatchEvent(_this, &xevent, more_events);
+     }
+ }
+ 
