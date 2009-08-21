@@ -377,8 +377,8 @@ if [[ -n "$INSTALLED_SDL" ]] ; then
 elif $WITH_SDL; then
     echo "Installing SDL..."
     user_eval "cd ${DIR} &&
-               tar -zxf SDL-1.3.0-4460.tar.gz &&
-               cd SDL-1.3.0-4460 &&
+               tar -zxf SDL-1.3.0-4685.tar.gz &&
+               cd SDL-1.3.0-4685 &&
                ./configure --prefix=${DIR} &&
                patch -p0 < ../SDLkeymouse.patch &&
                make $NUM_PROCS &&
