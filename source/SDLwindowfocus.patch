@@ -1,0 +1,57 @@
+diff -ru src/events/SDL_keyboard.c ../../SDL-1.3.0-4685/src/events/SDL_keyboard.c
+--- src/events/SDL_keyboard.c	2009-08-20 21:12:42.000000000 -0700
++++ ../../SDL-1.3.0-4685/src/events/SDL_keyboard.c	2009-08-22 02:36:54.000000000 -0700
+@@ -610,6 +610,8 @@
+         return;
+     }
+ 
++    keyboard->modstate=0;
++
+     for (scancode = 0; scancode < SDL_NUM_SCANCODES; ++scancode) {
+         if (keyboard->keystate[scancode] == SDL_PRESSED) {
+             SDL_SendKeyboardKey(index, SDL_RELEASED, scancode);
+diff -ru src/events/SDL_mouse.c ../../SDL-1.3.0-4685/src/events/SDL_mouse.c
+--- src/events/SDL_mouse.c	2009-08-20 21:12:42.000000000 -0700
++++ ../../SDL-1.3.0-4685/src/events/SDL_mouse.c	2009-08-22 02:46:41.000000000 -0700
+@@ -149,11 +149,13 @@
+ SDL_ResetMouse(int index)
+ {
+     SDL_Mouse *mouse = SDL_GetMouse(index);
+-
++    int i;
+     if (!mouse) {
+         return;
+     }
+-
++    for ( i=0;i<256;++i) {
++        SDL_SendMouseButton(mouse->id,SDL_RELEASED,i);
++    }
+     /* FIXME */
+ }
+ 
+diff -ru src/video/SDL_video.c ../../SDL-1.3.0-4685/src/video/SDL_video.c
+--- src/video/SDL_video.c	2009-08-20 21:12:50.000000000 -0700
++++ ../../SDL-1.3.0-4685/src/video/SDL_video.c	2009-08-22 02:30:19.000000000 -0700
+@@ -1339,7 +1339,7 @@
+ SDL_OnWindowFocusLost(SDL_Window * window)
+ {
+     SDL_VideoDisplay *display = SDL_GetDisplayFromWindow(window);
+-
++    int i;
+     if (window->flags & SDL_WINDOW_FULLSCREEN) {
+         SDL_MinimizeWindow(window->id);
+         SDL_SetDisplayMode(NULL);
+@@ -1351,6 +1351,13 @@
+         && _this->SetWindowGrab) {
+         _this->SetWindowGrab(_this, window);
+     }
++
++    for (i=0;i<SDL_GetNumKeyboards();++i) {
++        SDL_ResetKeyboard(i);
++    }
++    for (i=0;i<SDL_GetNumMice();++i) {
++        SDL_ResetMouse(i);
++    }
+ }
+ 
+ SDL_WindowID
