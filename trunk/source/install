@@ -792,7 +792,7 @@ if $WITH_CHROMIUM; then
                mv home/chrome-svn/tarball/chromium .'
     fi
     if [ x"${CHROMIUM_REV}" = x ]; then
-      CHROMIUM_REV=19929
+      CHROMIUM_REV=23522
     fi
     if [ x"${CHROMIUM_DEBUG}" = xtrue ]; then
       echo "*** Building Chromium in Debug mode"
