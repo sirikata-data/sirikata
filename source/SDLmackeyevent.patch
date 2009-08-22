@@ -1,0 +1,148 @@
+Index: src/video/cocoa/SDL_cocoakeyboard.m
+===================================================================
+--- src/video/cocoa/SDL_cocoakeyboard.m	(revision 4685)
++++ src/video/cocoa/SDL_cocoakeyboard.m	(working copy)
+@@ -58,10 +58,18 @@
+ {
+ }
+ - (void) doCommandBySelector:(SEL)myselector;
++
++- (BOOL)acceptsFirstResponder;
+ @end
+ 
+ @implementation SDLTranslatorResponder
+ - (void) doCommandBySelector:(SEL) myselector {}
++
++- (BOOL)acceptsFirstResponder
++{
++    [[self window] makeFirstResponder:self];
++    return YES;
++}
+ @end
+ 
+ /* This is the original behavior, before support was added for 
+@@ -513,7 +521,16 @@
+             [data->fieldEdit interpretKeyEvents:[NSArray arrayWithObject:event]];
+             text = [[event characters] UTF8String];
+             if(text && *text) {
+-                SDL_SendKeyboardText(data->keyboard, text);
++                unichar keyChar = [[event charactersIgnoringModifiers] characterAtIndex:0];
++                /*
++                 NSUpArrowFunctionKey            = 0xF700,
++                 ...
++                 NSModeSwitchFunctionKey         = 0xF747
++                 */
++                if ((keyChar < 0xF700 || keyChar > 0xF8FF) &&
++                        (keyChar>=32 || isspace(keyChar)) && keyChar != 127) {
++                    SDL_SendKeyboardText(data->keyboard, text);
++                }
+                 [data->fieldEdit setString:@""];
+             }
+         }
+Index: src/video/cocoa/SDL_cocoawindow.h
+===================================================================
+--- src/video/cocoa/SDL_cocoawindow.h	(revision 4685)
++++ src/video/cocoa/SDL_cocoawindow.h	(working copy)
+@@ -58,6 +58,14 @@
+ -(void) rightMouseDragged:(NSEvent *) theEvent;
+ -(void) otherMouseDragged:(NSEvent *) theEvent;
+ -(void) scrollWheel:(NSEvent *) theEvent;
++
++- (void)keyDown:(NSEvent*)event;
++- (void)keyUp:(NSEvent*)event;
++- (void)flagsChanged:(NSEvent*)event;
++- (void)interpretKeyEvents:(NSArray *)eventArray;
++
++- (void)insertText:(id)aString;
++
+ @end
+ /* *INDENT-ON* */
+ 
+Index: src/video/cocoa/SDL_cocoaevents.m
+===================================================================
+--- src/video/cocoa/SDL_cocoaevents.m	(revision 4685)
++++ src/video/cocoa/SDL_cocoaevents.m	(working copy)
+@@ -165,12 +165,12 @@
+ Cocoa_PumpEvents(_THIS)
+ {
+     NSAutoreleasePool *pool;
++    SDL_VideoData *data = (SDL_VideoData *)_this->driverdata;
+ 
+     /* Update activity every 30 seconds to prevent screensaver */
+     /* FIXME: This define isn't available with 64-bit Mac OS X? */
+ #ifdef UsrActivity
+     if (_this->suspend_screensaver) {
+-        SDL_VideoData *data = (SDL_VideoData *)_this->driverdata;
+         Uint32 now = SDL_GetTicks();
+         if (!data->screensaver_activity ||
+             (int)(now-data->screensaver_activity) >= 30000) {
+@@ -194,6 +194,9 @@
+             /* Fall through to pass event to NSApp; er, nevermind... */
+             /* FIXME: Find a way to stop the beeping, using delegate */
+             break;
++        case NSRightMouseDown:
++            SDL_SendMouseButton(data->mouse, SDL_PRESSED, SDL_BUTTON_RIGHT);
++            /* fall through, though Cocoa won't pass rightMouseDown to our responder */
+         default:
+             [NSApp sendEvent:event];
+             break;
+Index: src/video/cocoa/SDL_cocoawindow.m
+===================================================================
+--- src/video/cocoa/SDL_cocoawindow.m	(revision 4685)
++++ src/video/cocoa/SDL_cocoawindow.m	(working copy)
+@@ -178,7 +178,7 @@
+         button = SDL_BUTTON_MIDDLE;
+         break;
+     default:
+-        button = [theEvent buttonNumber];
++        button = [theEvent buttonNumber]+1;
+         break;
+     }
+     SDL_SendMouseButton(index, SDL_PRESSED, button);
+@@ -211,7 +211,7 @@
+         button = SDL_BUTTON_MIDDLE;
+         break;
+     default:
+-        button = [theEvent buttonNumber];
++        button = [theEvent buttonNumber]+1;
+         break;
+     }
+     SDL_SendMouseButton(index, SDL_RELEASED, button);
+@@ -277,6 +277,37 @@
+     SDL_SendMouseWheel(index, (int)([theEvent deltaX]+0.9f), (int)([theEvent deltaY]+0.9f));
+ }
+ 
++- (void)keyDown:(NSEvent*)event
++{
++    Cocoa_HandleKeyEvent(SDL_GetVideoDevice(), event);
++}
++
++- (void)keyUp:(NSEvent*)event
++{
++    Cocoa_HandleKeyEvent(SDL_GetVideoDevice(), event);
++}
++
++- (void)flagsChanged:(NSEvent*)event
++{
++    Cocoa_HandleKeyEvent(SDL_GetVideoDevice(), event);
++}
++
++- (void)interpretKeyEvents:(NSArray *)eventArray
++{
++    unsigned int len = [eventArray count];
++    unsigned int i;
++    for (i = 0; i < len; i++) {
++        Cocoa_HandleKeyEvent(SDL_GetVideoDevice(), [eventArray objectAtIndex:i]);
++    }
++}
++
++- (void)insertText:(id)aString
++{
++    const char *text = [[aString string] UTF8String];
++    fprintf(stderr, "Insert Text: %s\n", text);
++    SDL_SendKeyboardText(_data->videodata->keyboard, text);
++}
++
+ @end
+ 
+ @interface SDLWindow : NSWindow
