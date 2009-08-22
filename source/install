@@ -385,7 +385,7 @@ elif $WITH_SDL; then
                patch -p0 < ../SDLx11keyrepeat.patch &&
                make $NUM_PROCS &&
                make install" && \
-    make_symlink SDL-1.3.0-4460 installed-sdl || \
+    make_symlink SDL-1.3.0-4685 installed-sdl || \
     FAILED="$FAILED sdl"
 fi
 
