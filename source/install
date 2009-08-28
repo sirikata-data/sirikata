@@ -654,39 +654,22 @@ fi
 user_eval "cd ${DIR} && unzip -o IronPython-2.0.1.zip";
 
 if [[ -n "$INSTALLED_PROTOBUFS" ]] ; then
-    make_symlink $INSTALLED_PROTOBUFS installed-protobufs
+    user_eval "mkdir ${DIR}/installed-protobufs;mkdir ${DIR}/installed-protobufs/bin"
+    make_symlink $INSTALLED_PROTOBUFS/lib installed-protobufs/lib
+    make_symlink $INSTALLED_PROTOBUFS/bin/protoc installed-protobufs/bin/protoc
+    make_symlink $INSTALLED_PROTOBUFS/include installed-protobufs/include
+    user_eval "cd ${DIR} && tar -zxf dotnet-protobufs-8be61a3c8d47c31b277aa0d8b35d55c503fa414c.tar.gz"
 elif $WITH_PROTOBUFS; then
-  if [ -e "${DIR}/installed-mono/bin/gmcs" ] ; then
-    echo "Installing DotNet-Protobufs..."
-    user_eval "cd ${DIR} &&
-               tar -zxf dotnet-protobufs.f0b299db576712173d00cacf0fd7c7583eb8ed25.tar.gz &&
-               cd dotnet-protobufs &&
-               patch -p1 -N < ../protobufs_patches/build_fix.patch &&
-               patch -p1 -N < ../protobufs_patches/csharp_generator_generic_namespace_alias.patch &&
-               patch -p0 -N < ../protobufs_patches/new_list_empty.patch &&
-               patch -p0 -N < ../protobufs_patches/makefile_am_fix.patch &&
-               ./autogen.sh && \
+    user_eval "cd ${DIR} && \
+               tar -zxf protobuf-2.2.0.tar.gz && \
+               cd protobuf-2.2.0 && \
                ./configure --prefix=${DIR}/installed-protobufs && \
                make $NUM_PROCS && \
-               make install &&
-               ( cp csharp/Google.ProtocolBuffers.dll ${DIR}/installed-protobufs/bin/ || find csharp/ProtocolBuffers -name *.cs |xargs ../installed-mono/bin/gmcs -target:library -out:${DIR}/installed-protobufs/bin/Google.ProtocolBuffers.dll ) " || \
+               make install && \
+               cd ${DIR} && \
+               tar -zxf dotnet-protobufs-8be61a3c8d47c31b277aa0d8b35d55c503fa414c.tar.gz " || \
     FAILED="$FAILED protobufs"
 # now this is in the makefile thanks to makefile_am_fix.patch              
-  else
-# Just install regular protocol buffers from Google
-    echo "Installing Protobufs without mono..."
-    user_eval "cd ${DIR};
-               wget -c http://protobuf.googlecode.com/files/protobuf-2.1.0.tar.gz;
-               tar -xzvf protobuf-2.1.0.tar.gz;
-               cd protobuf-2.1.0;
-               mkdir ${DIR}/lib >& /dev/null || touch ${DIR}/lib ;
-               ./autogen.sh;
-               ./configure --prefix=${DIR}/installed-protobufs;
-               echo=/bin/echo make $NUM_PROCS;
-               echo=/bin/echo make install;
-               cd .." || \
-    FAILED="$FAILED protobufs"
-  fi
 fi
 
 ################################################################################################################################
