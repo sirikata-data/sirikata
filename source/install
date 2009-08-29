@@ -667,7 +667,7 @@ elif $WITH_PROTOBUFS; then
                make $NUM_PROCS && \
                make install && \
                cd ${DIR} && \
-               tar -zxf dotnet-protobufs-8be61a3c8d47c31b277aa0d8b35d55c503fa414c.tar.gz " || \
+               tar -zxf dotnet-protobufs-*.tar.gz " || \
     FAILED="$FAILED protobufs"
 # now this is in the makefile thanks to makefile_am_fix.patch              
 fi
