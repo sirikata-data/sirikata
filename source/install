@@ -29,6 +29,7 @@ WITH_ANTLR=false
 WITH_AWESOMIUM=false
 WITH_CHROMIUM=false
 WITH_CHROMIUMDEPS=false
+WITH_YUI=false
 
 SHOW_USAGE=true
 
@@ -45,11 +46,12 @@ Usage: $0 [--use-root] [--user <username>] [-j<num-procs>]
            [--installed-protobufs <path>]
            [--installed-ogre <path>]
            [--installed-ois <path>]
+           [--installed-yui <path>]
            <package> ...
 
 Packages include:
 	all, boost, freeimage, curl, sqlite, protobufs, sdl, ois, ogre, mono,
-	bullet, awesomium, --use-root chromiumdeps, chromium
+	bullet, awesomium, --use-root chromiumdeps, chromium, yui
 
 You must run the script with root privileges (sudo) if you specify --use-root.
 $0 --help displays this help message.
@@ -120,6 +122,10 @@ do
           WITH_CHROMIUM=true
           SHOW_USAGE=false
           ;;
+      yui)
+          WITH_YUI=true
+          SHOW_USAGE=false
+          ;;
       all)
           WITH_BOOST=true
           WITH_FREEIMAGE=true
@@ -131,6 +137,7 @@ do
           WITH_MONO=true
           WITH_BULLET=true
           WITH_ANTLR=true
+          WITH_YUI=true
           SHOW_USAGE=false
           ;;
 
@@ -178,6 +185,10 @@ do
       --installed-ogre )
           shift
           INSTALLED_OGRE="$1"
+          ;;
+      --installed-yui )
+          shift
+          INSTALLED_YUI="$1"
           ;;
       --without-mono )
           WITH_MONO=false
@@ -812,6 +823,22 @@ if $WITH_AWESOMIUM; then
                make ${NUM_PROCS} CHROMIUMDIR=${DIR}/chromium/chromium CHROMIUMMODE=`cat chromium/compilemode.txt`" && \
     make_symlink ../externals/awesomium/Awesomium installed-awesomium || \
     FAILED="$FAILED awesomium"
+fi
+
+################################################################################################################################
+# Yahoo UI Library
+################################################################################################################################
+
+echo "Installing YUI..."
+unzip -o machindependencies/yui.2.7.0b.zip || FAILED="$FAILED yui"
+
+if [[ -n "$INSTALLED_YUI" ]] ; then
+    make_symlink $INSTALLED_YUI installed-yui
+elif $WITH_YUI; then
+    echo "Installing YUI..."
+    unzip -o machindependencies/yui.2.7.0b.zip && \
+    make_symlink yui installed-yui || \
+    FAILED="$FAILED yui"
 fi
 
 ################################################################################################################################

@@ -73,7 +73,7 @@ compiled-dependencies: installed-antlr installed-protobufs installed-sqlite
 
 optional-dependencies: installed-ogre installed-bullet installed-mono $(AWESOMIUM_DEPS)
 
-nonroot-dependencies: installed-curl installed-boost
+nonroot-dependencies: installed-curl installed-boost installed-yui
 
 root-dependencies-install :
 	sudo ./install $(INSTALLFLAGS) --use-root --user `whoami`
