@@ -830,8 +830,6 @@ fi
 ################################################################################################################################
 
 echo "Installing YUI..."
-unzip -o machindependencies/yui.2.7.0b.zip || FAILED="$FAILED yui"
-
 if [[ -n "$INSTALLED_YUI" ]] ; then
     make_symlink $INSTALLED_YUI installed-yui
 elif $WITH_YUI; then
