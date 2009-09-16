@@ -29,6 +29,7 @@ WITH_ANTLR=false
 WITH_AWESOMIUM=false
 WITH_CHROMIUM=false
 WITH_CHROMIUMDEPS=false
+WITH_OPENCOLLADA=false
 WITH_YUI=false
 
 SHOW_USAGE=true
@@ -50,7 +51,7 @@ Usage: $0 [--use-root] [--user <username>] [-j<num-procs>]
            <package> ...
 
 Packages include:
-	all, boost, freeimage, curl, sqlite, protobufs, sdl, ois, ogre, mono,
+	all, boost, freeimage, curl, sqlite, protobufs, sdl, ois, ogre, mono, opencollada
 	bullet, awesomium, --use-root chromiumdeps, chromium, yui
 
 You must run the script with root privileges (sudo) if you specify --use-root.
@@ -69,6 +70,10 @@ do
       boost)
           SHOW_USAGE=false
           WITH_BOOST=true
+          ;;
+      opencollada)
+          WITH_OPENCOLLADA=true
+          SHOW_USAGE=false
           ;;
       freeimage)
           WITH_FREEIMAGE=true
@@ -137,6 +142,7 @@ do
           WITH_MONO=true
           WITH_BULLET=true
           WITH_ANTLR=true
+          WITH_OPENCOLLADA=true
           WITH_YUI=true
           SHOW_USAGE=false
           ;;
@@ -185,6 +191,10 @@ do
       --installed-ogre )
           shift
           INSTALLED_OGRE="$1"
+          ;;
+      --installed-opencollada )
+          shift
+          INSTALLED_OPENCOLLADA="$1"
           ;;
       --installed-yui )
           shift
@@ -549,7 +559,7 @@ elif $WITH_OIS ; then
 
 fi
 
-# Install Bullet
+
 
 if [[ -n "$INSTALLED_BULLET" ]] ; then
     make_symlink $INSTALLED_BULLET installed-bullet
@@ -693,14 +703,14 @@ if $WITH_CHROMIUM || $WITH_CHROMIUMDEPS; then
       echo "http://code.google.com/p/chromium/wiki/LinuxBuildInstructionsPrerequisites"
       case "$DISTRO" in
         debian )
-            apt-get install subversion pkg-config python perl g++ g++-multilib
+            apt-get install subversion pkg-config python ruby perl g++ g++-multilib
             apt-get install bison flex gperf libnss3-dev libnspr4-dev libgtk2.0-dev libnspr4-0d libasound2-dev
             apt-get install msttcorefonts libgconf2-dev libcairo2-dev libdbus-1-dev
             apt-get install liborbit2-dev libpopt-dev orbit2 
             apt-get install libnss3-dev
             ;;
         fedora )
-            yum install subversion pkgconfig python perl gcc-c++ bison \
+            yum install subversion pkgconfig python perl ruby gcc-c++ bison \
                         flex gperf nss-devel nspr-devel gtk2-devel.i386 glib2-devel.i386 \
                         freetype-devel.i386 atk-devel.i386 pango-devel.i386 cairo-devel.i386 \
                         fontconfig-devel.i386 GConf2-devel.i386 dbus-devel.i386 alsa-lib-devel
@@ -825,6 +835,69 @@ if $WITH_AWESOMIUM; then
     FAILED="$FAILED awesomium"
 fi
 
+# Install OpenCollada
+
+if [[ -n "$INSTALLED_OPENCOLLADA" ]] ; then
+    make_symlink $INSTALLED_OPENCOLLADA installed-opencollada
+elif $WITH_OPENCOLLADA ; then
+    echo "Installing OpenCollada..."
+    clean_dir installed-opencollada
+    user_eval "cd ${DIR} &&
+               svn co -r585 https://opencollada.svn.sourceforge.net/svnroot/opencollada/trunk opencollada &&
+               mkdir ${DIR}/installed-opencollada &&
+               mkdir ${DIR}/installed-opencollada/lib &&
+               cd opencollada &&
+               tar -zxf ${DIR}/bullet*gz &&
+               cp -r bullet-*/Extras/LibXML Externals/ &&
+               cd Externals/LibXML &&
+               aclocal&&autoconf&&automake -a&&./configure --disable-shared --enable-static --prefix=${DIR}/installed-opencollada &&
+               cat Makefile.am | sed -e \"s/SUBDIRS = include / SUBDIRS = /\" > Makefile.bak &&
+               mv Makefile.bak Makefile.am &&
+               ( make CFLAGS=\"-DXML_WITH_ZLIB -O2 -g\" $NUMPROCS  install || cp .libs/lib* ${DIR}/installed-opencollada/lib/)
+               cd ../.. &&
+               cd Externals/pcre/scripts &&
+               ruby ${DIR}/vcproj2cmake.rb pcre.vcproj &&
+               cmake . -DCMAKE_CXX_COMPILER=`which g++` -DCMAKE_C_COMPILER=`which gcc` &&             
+               make $NUM_PROCS &&
+               cd ../../.. &&
+               cd Externals/UTF &&
+               gcc -g -O2 -c src/ConvertUTF.c -Iinclude/
+               ar cru ConvertUTF.a ConvertUTF.o
+               cd ../.. &&
+               cd GeneratedSaxParser/scripts &&
+               ruby ${DIR}/vcproj2cmake.rb GeneratedSaxParser.vcproj &&
+               echo include_directories\(../../Externals/UTF/include ../../Externals/LibXML/include ../../Externals/pcre/include ../../COLLADAFramework/include ../../COLLADABaseUtils/include ../../GeneratedSaxParser/include ../include ../include/generated15 ../include/generated14 ../include/Math \) >> CMakeLists.txt &&
+               echo add_definitions\( -DGENERATEDSAXPARSER_XMLPARSER_LIBXML  -DGENERATEDSAXPARSER_VALIDATION -DPCRE_STATIC \) >> CMakeLists.txt &&
+               echo add_library\(GeneratedSaxParser STATIC \$\{SOURCES\}\) >> CMakeLists.txt &&
+               cmake . -DCMAKE_CXX_COMPILER=`which g++` -DCMAKE_C_COMPILER=`which gcc` &&
+               make $NUM_PROCS &&
+               cd ../.. &&
+               cd COLLADASaxFrameworkLoader/scripts &&
+               ruby ${DIR}/vcproj2cmake.rb COLLADASaxFrameworkLoader.vcproj &&
+               echo include_directories\(../../Externals/UTF/include ../../Externals/LibXML/include ../../Externals/pcre/include ../../COLLADAFramework/include ../../COLLADABaseUtils/include ../../GeneratedSaxParser/include ../include ../include/generated15 ../include/generated14 ../include/Math \) >> CMakeLists.txt &&
+               echo add_definitions\( -DGENERATEDSAXPARSER_XMLPARSER_LIBXML  -DGENERATEDSAXPARSER_VALIDATION -DPCRE_STATIC \) >> CMakeLists.txt &&
+               echo add_library\(COLLADASaxFrameworkLoader STATIC \$\{SOURCES\}\) >> CMakeLists.txt &&
+               cmake . -DCMAKE_CXX_COMPILER=`which g++` -DCMAKE_C_COMPILER=`which gcc` &&             
+               make $NUM_PROCS &&
+               cd ../.. &&
+               cd COLLADABaseUtils/scripts &&
+               ruby ${DIR}/vcproj2cmake.rb COLLADABaseUtils.vcproj &&
+               cat CMakeLists.txt | sed -e \"s/-DWIN32/-DGENERATEDSAXPARSER_XMLPARSER_LIBXML -DGENERATEDSAXPARSER_VALIDATION -DPCRE_STATIC/\" > CMakeLists.bak &&
+               mv CMakeLists.bak CMakeLists.txt &&
+               cmake . -DCMAKE_CXX_COMPILER=`which g++` -DCMAKE_C_COMPILER=`which gcc` &&
+               make $NUM_PROCS &&
+               cd ../.. &&
+               cd COLLADAFramework/scripts &&
+               ruby ${DIR}/vcproj2cmake.rb COLLADAFramework.vcproj &&
+               cat CMakeLists.txt | sed -e \"s/-DWIN32/-DGENERATEDSAXPARSER_XMLPARSER_LIBXML -DGENERATEDSAXPARSER_VALIDATION -DPCRE_STATIC/\" > CMakeLists.bak &&
+               mv CMakeLists.bak CMakeLists.txt &&
+               cmake . -DCMAKE_CXX_COMPILER=`which g++` -DCMAKE_C_COMPILER=`which gcc` &&
+               make $NUM_PROCS &&
+               cd ../.. &&
+               find GeneratedSaxParser COLLADA* -name *.a -exec cp {} ${DIR}/installed-opencollada/lib/ \; " || \
+    FAILED="$FAILED opencollada"
+
+fi
 ################################################################################################################################
 # Yahoo UI Library
 ################################################################################################################################
