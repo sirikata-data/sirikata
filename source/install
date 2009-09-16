@@ -843,12 +843,14 @@ elif $WITH_OPENCOLLADA ; then
     echo "Installing OpenCollada..."
     clean_dir installed-opencollada
     user_eval "cd ${DIR} &&
+               rm -rf opencollada/Externals/LibXML &&
                svn co -r585 https://opencollada.svn.sourceforge.net/svnroot/opencollada/trunk opencollada &&
                mkdir ${DIR}/installed-opencollada &&
                mkdir ${DIR}/installed-opencollada/lib &&
                cd opencollada &&
                tar -zxf ${DIR}/bullet*gz &&
-               cp -r bullet-*/Extras/LibXML Externals/ &&
+               rm -rf Externals/LibXML &&
+               cp -r bullet-*/Extras/LibXML Externals/LibXML &&
                cd Externals/LibXML &&
                aclocal&&autoconf&&automake -a&&./configure --disable-shared --enable-static --prefix=${DIR}/installed-opencollada &&
                cat Makefile.am | sed -e \"s/SUBDIRS = include / SUBDIRS = /\" > Makefile.bak &&
