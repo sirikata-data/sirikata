@@ -844,7 +844,7 @@ elif $WITH_OPENCOLLADA ; then
     clean_dir installed-opencollada
     user_eval "cd ${DIR} &&
                rm -rf opencollada/Externals/LibXML &&
-               svn co -r585 https://opencollada.svn.sourceforge.net/svnroot/opencollada/trunk opencollada &&
+               svn co -r587 https://opencollada.svn.sourceforge.net/svnroot/opencollada/trunk opencollada &&
                mkdir ${DIR}/installed-opencollada &&
                mkdir ${DIR}/installed-opencollada/lib &&
                cd opencollada &&
@@ -859,7 +859,12 @@ elif $WITH_OPENCOLLADA ; then
                cd ../.. &&
                cd Externals/pcre/scripts &&
                ruby ${DIR}/vcproj2cmake.rb pcre.vcproj &&
-               cmake . -DCMAKE_CXX_COMPILER=`which g++` -DCMAKE_C_COMPILER=`which gcc` &&             
+               cmake . -DCMAKE_CXX_COMPILER=`which g++` -DCMAKE_C_COMPILER=`which gcc` &&    
+               make $NUM_PROCS &&
+               cd ../../.. &&
+               cd Externals/MathMLSolver/scripts &&
+               ruby ${DIR}/vcproj2cmake.rb MathMLSolver.vcproj &&
+               cmake . -DCMAKE_CXX_COMPILER=`which g++` -DCMAKE_C_COMPILER=`which gcc` &&    
                make $NUM_PROCS &&
                cd ../../.. &&
                cd Externals/UTF &&
@@ -868,7 +873,7 @@ elif $WITH_OPENCOLLADA ; then
                cd ../.. &&
                cd GeneratedSaxParser/scripts &&
                ruby ${DIR}/vcproj2cmake.rb GeneratedSaxParser.vcproj &&
-               echo include_directories\(../../Externals/UTF/include ../../Externals/LibXML/include ../../Externals/pcre/include ../../COLLADAFramework/include ../../COLLADABaseUtils/include ../../GeneratedSaxParser/include ../include ../include/generated15 ../include/generated14 ../include/Math \) >> CMakeLists.txt &&
+               echo include_directories\(../../Externals/UTF/include ../../Externals/LibXML/include ../../Externals/pcre/include ../../Externals/MathMLSolver/include/ ../../Externals/MathMLSolver/include/AST ../../COLLADAFramework/include ../../COLLADABaseUtils/include ../../GeneratedSaxParser/include ../include ../include/generated15 ../include/generated14 ../include/Math \) >> CMakeLists.txt &&
                echo add_definitions\( -DGENERATEDSAXPARSER_XMLPARSER_LIBXML  -DGENERATEDSAXPARSER_VALIDATION -DPCRE_STATIC \) >> CMakeLists.txt &&
                echo add_library\(GeneratedSaxParser STATIC \$\{SOURCES\}\) >> CMakeLists.txt &&
                cmake . -DCMAKE_CXX_COMPILER=`which g++` -DCMAKE_C_COMPILER=`which gcc` &&
@@ -876,10 +881,10 @@ elif $WITH_OPENCOLLADA ; then
                cd ../.. &&
                cd COLLADASaxFrameworkLoader/scripts &&
                ruby ${DIR}/vcproj2cmake.rb COLLADASaxFrameworkLoader.vcproj &&
-               echo include_directories\(../../Externals/UTF/include ../../Externals/LibXML/include ../../Externals/pcre/include ../../COLLADAFramework/include ../../COLLADABaseUtils/include ../../GeneratedSaxParser/include ../include ../include/generated15 ../include/generated14 ../include/Math \) >> CMakeLists.txt &&
+               echo include_directories\(../../Externals/UTF/include ../../Externals/LibXML/include ../../Externals/pcre/include ../../Externals/MathMLSolver/include/ ../../Externals/MathMLSolver/include/AST ../../COLLADAFramework/include ../../COLLADABaseUtils/include ../../GeneratedSaxParser/include ../include ../include/generated15 ../include/generated14 ../include/Math \) >> CMakeLists.txt &&
                echo add_definitions\( -DGENERATEDSAXPARSER_XMLPARSER_LIBXML  -DGENERATEDSAXPARSER_VALIDATION -DPCRE_STATIC \) >> CMakeLists.txt &&
                echo add_library\(COLLADASaxFrameworkLoader STATIC \$\{SOURCES\}\) >> CMakeLists.txt &&
-               cmake . -DCMAKE_CXX_COMPILER=`which g++` -DCMAKE_C_COMPILER=`which gcc` &&             
+               cmake . -DCMAKE_CXX_COMPILER=`which g++` -DCMAKE_C_COMPILER=`which gcc` &&
                make $NUM_PROCS &&
                cd ../.. &&
                cd COLLADABaseUtils/scripts &&
@@ -896,7 +901,7 @@ elif $WITH_OPENCOLLADA ; then
                cmake . -DCMAKE_CXX_COMPILER=`which g++` -DCMAKE_C_COMPILER=`which gcc` &&
                make $NUM_PROCS &&
                cd ../.. &&
-               find GeneratedSaxParser COLLADA* -name *.a -exec cp {} ${DIR}/installed-opencollada/lib/ \; " || \
+               find GeneratedSaxParser COLLADA* Externals -name *.a -exec cp {} ${DIR}/installed-opencollada/lib/ \; " || \
     FAILED="$FAILED opencollada"
 
 fi
