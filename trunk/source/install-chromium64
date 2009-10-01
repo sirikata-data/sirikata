@@ -1,0 +1,890 @@
+#!/bin/bash
+
+################################################################################################################################
+# Initialize variables
+################################################################################################################################
+
+USE_ROOT=false
+USER=`whoami`
+USER_SHELL="/bin/bash"
+SAME_USER=true
+NUM_PROCS=-j2
+DIR=`pwd`
+platform="`uname -m`"
+
+
+FORCE_32BIT=false
+
+WITH_BOOST=false
+WITH_FREEIMAGE=false
+WITH_CURL=false
+WITH_SQLITE=false
+WITH_PROTOBUFS=false
+WITH_OIS=false
+WITH_OGRE=false
+WITH_MONO=false
+WITH_BULLET=false
+WITH_SDL=false
+WITH_ANTLR=false
+WITH_AWESOMIUM=false
+WITH_CHROMIUM=false
+WITH_CHROMIUMDEPS=false
+WITH_OPENCOLLADA=false
+WITH_YUI=false
+
+SHOW_USAGE=true
+
+function show_usage
+{
+          echo "
+Usage: $0 [--use-root] [--user <username>] [-j<num-procs>]
+           [--force-32bit]
+           [--installed-boost <path>]
+           [--installed-bullet <path>]
+           [--installed-freeimage <path>]
+           [--installed-curl <path>]
+           [--installed-sqlite <path>]
+           [--installed-protobufs <path>]
+           [--installed-ogre <path>]
+           [--installed-ois <path>]
+           [--installed-yui <path>]
+           <package> ...
+
+Packages include:
+	all, boost, freeimage, curl, sqlite, protobufs, sdl, ois, ogre, mono, opencollada
+	bullet, awesomium, --use-root chromiumdeps, chromium, yui
+
+You must run the script with root privileges (sudo) if you specify --use-root.
+$0 --help displays this help message.
+"
+}
+
+################################################################################################################################
+# Parse command-line arguments
+################################################################################################################################
+
+until [ -z "$1" ]  # until all parameters used up
+do
+  case "$1" in
+
+      boost)
+          SHOW_USAGE=false
+          WITH_BOOST=true
+          ;;
+      opencollada)
+          WITH_OPENCOLLADA=true
+          SHOW_USAGE=false
+          ;;
+      freeimage)
+          WITH_FREEIMAGE=true
+          SHOW_USAGE=false
+          ;;
+      curl)
+          WITH_CURL=true
+          SHOW_USAGE=false
+          ;;
+      sqlite)
+          WITH_SQLITE=true
+          SHOW_USAGE=false
+          ;;
+      protobufs)
+          WITH_PROTOBUFS=true
+          SHOW_USAGE=false
+          ;;
+      sdl)
+          WITH_SDL=true
+          SHOW_USAGE=false
+          ;;
+      ois)
+          WITH_OIS=true
+          SHOW_USAGE=false
+          ;;
+      ogre)
+          WITH_OGRE=true
+          SHOW_USAGE=false
+          ;;
+      mono)
+          WITH_MONO=true
+          SHOW_USAGE=false
+          ;;
+      antlr)
+          WITH_ANTLR=true
+          SHOW_USAGE=false
+          ;;
+      bullet)
+          WITH_BULLET=true
+          SHOW_USAGE=false
+          ;;
+      awesomium)
+          WITH_AWESOMIUM=true
+          SHOW_USAGE=false
+          ;;
+      chromiumdeps)
+          WITH_CHROMIUMDEPS=true
+          SHOW_USAGE=false
+          ;;
+      chromium)
+          WITH_CHROMIUM=true
+          SHOW_USAGE=false
+          ;;
+      yui)
+          WITH_YUI=true
+          SHOW_USAGE=false
+          ;;
+      all)
+          WITH_BOOST=true
+          WITH_FREEIMAGE=true
+          WITH_CURL=true
+          WITH_SQLITE=true
+          WITH_PROTOBUFS=true
+          WITH_OIS=true
+          WITH_OGRE=true
+          WITH_MONO=true
+          WITH_BULLET=true
+          WITH_ANTLR=true
+          WITH_OPENCOLLADA=true
+          WITH_YUI=true
+          SHOW_USAGE=false
+          ;;
+
+      --use-root )
+          SHOW_USAGE=false
+          USE_ROOT=true
+          ;;
+      --user )
+          shift
+          USER="$1"
+          ;;
+      --user-shell )
+          shift
+          USER_SHELL="$1"
+          ;;
+      -j* ) NUM_PROCS="$1" ;;
+      --installed-boost )
+          shift
+          INSTALLED_BOOST="$1"
+          ;;
+      --installed-freeimage )
+          shift
+          INSTALLED_FREEIMAGE="$1"
+          ;;
+      --installed-curl )
+          shift
+          INSTALLED_CURL="$1"
+          ;;
+      --installed-sqlite )
+          shift
+          INSTALLED_SQLITE="$1"
+          ;;
+      --installed-protobufs )
+          shift
+          INSTALLED_PROTOBUFS="$1"
+          ;;
+      --installed-bullet )
+          shift
+          INSTALLED_BULLET="$1"
+          ;;
+      --installed-ois )
+          shift
+          INSTALLED_OIS="$1"
+          ;;
+      --installed-ogre )
+          shift
+          INSTALLED_OGRE="$1"
+          ;;
+      --installed-opencollada )
+          shift
+          INSTALLED_OPENCOLLADA="$1"
+          ;;
+      --installed-yui )
+          shift
+          INSTALLED_YUI="$1"
+          ;;
+      --without-mono )
+          WITH_MONO=false
+          ;;
+      --force-32bit )
+          if [ x"$platform" = x"x86_64" ]; then
+              USER_SHELL="setarch i386 $USER_SHELL"
+              FORCE_32BIT=true
+          fi
+          ;;
+      --help )
+          show_usage
+          exit
+          ;;
+  esac
+  shift
+done
+
+if $SHOW_USAGE; then
+    show_usage
+    exit
+fi
+
+################################################################################################################################
+# Check for superuser
+################################################################################################################################
+
+if $USE_ROOT ; then
+    while test $UID != "0" ; do
+        echo "
+Please run this script with root privileges when you specify --use-root.
+Type $0 --help to see a list of all options.
+"
+        exit;
+    done
+fi
+
+
+################################################################################################################################
+# Check for distro
+################################################################################################################################
+
+if $USE_ROOT ; then
+    if [[ -n `which apt-get` ]] ; then
+        DISTRO=debian
+    elif [[ -n `which yum` ]] ; then
+        DISTRO=fedora
+    else
+        # TODO: Replace with message listing packages that should be installed as root, as per Patrick's suggestion
+        echo "Installing as root is not supported on your distribution."
+        exit
+    fi
+fi
+
+
+################################################################################################################################
+# Install support packages
+################################################################################################################################
+
+if $USE_ROOT ; then
+     case "$DISTRO" in
+       debian )
+           apt-get install sed unzip zip automake1.9 nvidia-cg-toolkit jam g++ libzzip-dev libxt-dev libxaw7-dev libxxf86vm-dev \
+                           libxrandr-dev libfreetype6-dev autoconf libtool libpcre3-dev flex bison patch libbz2-dev gawk \
+                           cmake libglu1-mesa-dev tofrodos freeglut3-dev
+           ;;
+     esac
+fi
+
+
+################################################################################################################################
+# Check if the user runnning the script is the the same as the one specified on the command line
+################################################################################################################################
+
+if [[ $USER != `whoami` ]] ; then
+    SAME_USER=false
+fi
+
+
+################################################################################################################################
+# Define a function to execute a command as a different user if necessary
+################################################################################################################################
+
+function user_eval {
+    if $SAME_USER ; then
+        pushd "${DIR}" >/dev/null
+        $USER_SHELL -c "$1"
+        RET=$?
+        popd >/dev/null
+        return $RET
+    else
+        su - $USER -s /usr/bin/env -- $USER_SHELL -c "export OLDPATH='$OLDPATH'; export PATH='$PATH'; cd ${DIR}; $1"
+        return $?
+    fi
+}
+
+################################################################################################################################
+# Define a function to make a symlink to an existing installation
+################################################################################################################################
+
+function make_symlink {
+    TARGET=$1
+    LINK_NAME=$2
+
+    user_eval "cd ${DIR}; rm -f $LINK_NAME; ln -fs $TARGET $LINK_NAME && (touch -m $LINK_NAME || true)"
+}
+
+# Unlike make_symlink, this will delete the contents, if this is not a symlink.
+function clean_dir {
+    DIRECTORY=$1
+    user_eval "cd ${DIR}; rm -f ${DIRECTORY} 2>/dev/null; rm -rf ${DIRECTORY}"
+}
+
+
+################################################################################################################################
+# Finds a useable CURL binary, either from the system or our installed-curl, setting CURL_BIN.
+################################################################################################################################
+
+function find_curl {
+    local installed_path="@{DIR}/installed-curl/bin/curl"
+    if [[ -e $installed_path ]] ; then
+        CURL_BIN=$installed_path
+    elif [[ -n `which curl` ]] ; then
+        CURL_BIN=`which curl`
+    else
+        echo "Couldn't find curl."
+        exit -1
+    fi
+}
+
+user_eval "cd ${DIR}; mkdir ${DIR}/include >& /dev/null || touch ${DIR}/include"
+user_eval "cd ${DIR}; mkdir ${DIR}/lib >& /dev/null || touch ${DIR}/lib"
+
+if $FORCE_32BIT; then
+    echo "******** Forcing 32-bit ********"
+    user_eval "
+    mkdir bin32 ;
+    echo '#!/bin/bash' > bin32/gcc ;
+    echo 'export PATH="'"${OLDPATH}"'"' >> bin32/gcc ;
+    echo '"'`basename $0` -m32 "${@/usr\/lib\/lib/usr/lib32/lib}"'"' >> bin32/gcc ;
+    cp -f bin32/gcc bin32/g++ ;
+    cp -f bin32/gcc bin32/c++ ;
+    cp -f bin32/gcc bin32/cc ;
+    chmod +x bin32/*
+    "
+    export OLDPATH="${PATH}"
+    export PATH="${DIR}/bin32:${PATH}"
+    echo $PATH
+fi
+
+################################################################################################################################
+# Install 32-bit support packages
+################################################################################################################################
+
+if $USE_ROOT && $FORCE_32BIT; then
+     case "$DISTRO" in
+       debian )
+           apt-get install libc6-dev-i386 libc6-i386 ia32-libs lib32gcc1 lib32stdc++6
+           apt-get install lib32asound2 lib32gomp1 lib32icu38 lib32ncurses5 lib32nss-mdns lib32z1 libx86-1
+           apt-get install lib32bz2-dev
+           ;;
+     esac
+fi
+# Also need:
+# sudo ln -s libstdc++.so.6 libstdc++.so
+# sudo ln -s libgthread-2.0.so.0 libgthread-2.0.so
+#sudo ln -s libGLU.so.1 libGLU.so
+#sudo ln -s libglut.so.3 libglut.so
+
+
+FAILED=
+
+################################################################################################################################
+# Install FreeImage and SDL and ANTLR
+################################################################################################################################
+
+if [[ -n "$INSTALLED_FREEIMAGE" ]] ; then
+    make_symlink $INSTALLED_FREEIMAGE installed-freeimage
+elif $WITH_FREEIMAGE; then
+    echo "Installing FreeImage..."
+    user_eval "cd ${DIR};
+               unzip -o FreeImage3100.zip &&
+               cd FreeImage &&
+               patch -p1 < ../FreeImage64bit.patch &&
+               make $NUM_PROCS &&
+               make dist &&
+               (cd ..;mkdir lib||echo exists;mkdir include||echo exists ;
+               cp FreeImage/Dist/* ${DIR}/lib;
+               cp FreeImage/Dist/* ${DIR}/include )" && \
+    make_symlink FreeImage installed-freeimage || \
+    FAILED="$FAILED freeimage"
+fi
+
+
+if [[ -n "$INSTALLED_SDL" ]] ; then
+    make_symlink $INSTALLED_SDL installed-sdl
+elif $WITH_SDL; then
+    echo "Installing SDL..."
+    user_eval "cd ${DIR} &&
+               tar -zxf SDL-1.3.0-4685.tar.gz &&
+               cd SDL-1.3.0-4685 &&
+               ./configure --prefix=${DIR} &&
+               patch -p0 < ../SDLkeymouse.patch &&
+               patch -p0 < ../SDLatomic.patch &&
+               patch -p0 < ../SDLx11keyrepeat.patch &&
+               patch -p0 < ../SDLwindowfocus.patch &&
+               make $NUM_PROCS &&
+               make install" && \
+    make_symlink SDL-1.3.0-4685 installed-sdl || \
+    FAILED="$FAILED sdl"
+fi
+
+if [[ -n "$INSTALLED_ANTLR" ]] ; then
+    make_symlink $INSTALLED_ANTLR installed-antlr
+elif $WITH_ANTLR ; then
+    echo "Installing ANTLR..."
+    user_eval "cd ${DIR} &&
+               tar -zxf libantlr3c-3.1.3.tar.gz &&
+               cd libantlr3c-3.1.3 &&
+               (if uname -m | grep x86_64; then
+                   ./configure --prefix=${DIR} --disable-shared --enable-64bit ;
+               else
+                   ./configure --prefix=${DIR} --disable-shared ;
+               fi) &&
+               make $NUM_PROCS &&
+               make install" && \
+    make_symlink libantlr3c-3.1.3 installed-antlr || \
+    FAILED="$FAILED antlr"
+
+fi
+
+################################################################################################################################
+# Install Boost
+################################################################################################################################
+
+PREFIX_BOOST=true
+if [[ -n "$INSTALLED_BOOST" ]] ; then
+    make_symlink $INSTALLED_BOOST installed-boost
+    WITH_BOOST=false
+fi
+if $USE_ROOT && $WITH_BOOST; then
+  if ! $FORCE_32BIT; then
+    echo "Installing Boost system-wide..."
+    case "$DISTRO" in
+        debian )
+            if (apt-get install libboost-system1.39-dev || apt-get install libboost-system1.38-dev || apt-get install libboost-system1.37-dev || apt-get install libboost-system1.36-dev) ; then
+                apt-get install libboost-program_options1.39-dev || apt-get install libboost-program_options1.38-dev || apt-get install libboost-program_options1.37-dev || apt-get install libboost-program_options1.36-dev
+                apt-get install libboost-thread1.39-dev || apt-get install libboost-thread1.38-dev || apt-get install libboost-thread1.37-dev || apt-get install libboost-thread1.36-dev
+                apt-get install libboost-math1.39-dev || apt-get install libboost-math1.38-dev || apt-get install libboost-math1.37-dev || apt-get install libboost-math1.36-dev
+                apt-get install libboost-date-time1.39-dev || apt-get install libboost-date-time1.38-dev || apt-get install libboost-date-time1.37-dev || apt-get install libboost-date-time1.36-dev
+                make_symlink /usr/lib installed-boost
+                PREFIX_BOOST=false
+                WITH_BOOST=false
+            fi
+            ;;
+    esac
+  fi
+fi
+if $WITH_BOOST ; then
+    echo "Installing Boost..."
+    clean_dir installed-boost
+    user_eval "cd ${DIR} &&
+               tar -jxf boost_1_37_0.tar.bz2 &&
+               cd boost_1_37_0 &&
+               ./configure --without-icu --with-libraries=system,program_options,thread,filesystem,regex,date_time --prefix=${DIR}/installed-boost &&
+               cat Makefile | sed -e s/LIBS=$/LIBS=$NUM_PROCS/ > Makefile_multiproc &&
+               make $NUM_PROCS -f Makefile_multiproc &&
+               make install" || \
+    FAILED="$FAILED boost"
+fi
+
+
+################################################################################################################################
+# Install CURL
+################################################################################################################################
+
+if [[ -n "$INSTALLED_CURL" ]] ; then
+    make_symlink $INSTALLED_CURL installed-curl
+    WITH_CURL=false
+fi
+if $USE_ROOT && $WITH_CURL ; then
+  if ! $FORCE_32BIT; then
+    echo "Installing CURL system-wide..."
+    case "$DISTRO" in
+        debian )
+            apt-get install libcurl4-openssl-dev
+            make_symlink /usr/lib installed-curl
+            WITH_CURL=false
+            ;;
+    esac
+  fi
+fi
+if $WITH_CURL ; then
+    echo "Installing CURL..."
+    clean_dir installed-curl
+    user_eval "cd ${DIR} &&
+               tar -jxf curl-7.19.4.tar.bz2 &&
+               cd curl-7.19.4 &&
+               ./configure --prefix=${DIR}/installed-curl &&
+               make $NUM_PROCS &&
+               make install" || \
+    FAILED="$FAILED curl"
+fi
+
+
+
+################################################################################################################################
+# Install SQLITE
+################################################################################################################################
+
+if [[ -n "$INSTALLED_SQLITE" ]] ; then
+    make_symlink $INSTALLED_SQLITE installed-sqlite
+    WITH_SQLITE=false
+fi
+if $USE_ROOT && $WITH_SQLITE ; then
+  if ! $FORCE_32BIT; then
+    echo "Installing SQLITE system-wide..."
+    case "$DISTRO" in
+        debian )
+            apt-get install libsqlite3-dev
+            make_symlink /usr/lib installed-sqlite
+            WITH_SQLITE=false
+            ;;
+    esac
+  fi
+fi
+if $WITH_SQLITE ; then
+    echo "Installing SQLITE..."
+    clean_dir installed-sqlite
+    user_eval "cd ${DIR} &&
+               tar -zxf sqlite-amalgamation-3.6.16.tar.gz &&
+               cd sqlite-3.6.16 &&
+               ./configure --prefix=${DIR}/installed-sqlite &&
+               make $NUM_PROCS &&
+               make install" || \
+    FAILED="$FAILED sqlite"
+fi
+
+
+
+################################################################################################################################
+# Install OIS
+################################################################################################################################
+
+if [[ -n "$INSTALLED_OIS" ]] ; then
+    make_symlink $INSTALLED_OIS installed-ois
+elif $WITH_OIS ; then
+    echo "Installing OIS..."
+    user_eval "cd ${DIR} &&
+               tar -zxf ois_1.2.0.tar.gz &&
+               cd ois &&
+               ./bootstrap &&
+               ./configure --prefix=${DIR} &&
+               make $NUM_PROCS &&
+               make install" && \
+    make_symlink ois installed-ois || \
+    FAILED="$FAILED ois"
+
+fi
+
+
+
+if [[ -n "$INSTALLED_BULLET" ]] ; then
+    make_symlink $INSTALLED_BULLET installed-bullet
+elif $WITH_BULLET ; then
+    echo "Installing Bullet..."
+    clean_dir installed-bullet
+    user_eval "cd ${DIR} &&
+               tar -zxf bullet-2.74.tgz &&
+               cd bullet-2.74 &&
+               mv install-sh install-sh.bak &&
+               tr -d '\r' < install-sh.bak > install-sh &&
+               chmod 755 install-sh &&
+               ./autogen.sh &&
+               ./configure --prefix=${DIR}/installed-bullet --disable-demos &&
+               make $NUMPROCS &&
+               make install && 
+               cp src/BulletDynamics/Dynamics/btActionInterface.h ${DIR}/installed-bullet/include/bullet/BulletDynamics/Dynamics/ && 
+               echo // >>${DIR}/installed-bullet/include/bullet/BulletDynamics/Dynamics/btActionInterface.h" || \
+    FAILED="$FAILED bullet"
+
+fi
+
+################################################################################################################################
+# Install Ogre
+################################################################################################################################
+
+if [[ -n "$INSTALLED_OGRE" ]] ; then
+    make_symlink $INSTALLED_OGRE installed-ogre
+elif $WITH_OGRE ; then
+    echo "Installing Ogre..."
+    if $FORCE_32BIT; then
+        find_curl
+        [ -e "${DIR}/lib/libzzip.so" ] || [ -e "/usr/lib32/libzzip.so" ] || \
+            user_eval "echo Installing 32-bit ZZIP;
+                       cd ${DIR};
+                       mkdir temp-extract; cd temp-extract &&
+                       ( tar -zxf ../zzip-0-13_0.13.49-4_i386.tar.gz || (wget http://http.us.debian.org/debian/pool/main/z/zziplib/libzzip-0-13_0.13.49-4_i386.deb -O zzip.deb &&
+                       ar p zzip.deb data.tar.gz | tar -zxf - ) ) && 
+                       cd usr/lib &&
+                       ln -s libzzip-0.so.13 libzzip.so &&
+                       cp -p libzzip* ${DIR}/lib/" && \
+            echo "zzip installed"
+        ZZIPLIB_LIBS="-L${DIR}/lib -lzzip"
+        [ -e "/usr/lib32/libXaw.so" ] || make_symlink /usr/lib32/libXaw.so.? lib/libXaw.so
+        [ -e "/usr/lib32/libXrandr.so" ] || make_symlink /usr/lib32/libXrandr.so.? lib/libXrandr.so
+        [ -e "/usr/lib32/libXxf86vm.so" ] || make_symlink /usr/lib32/libXxf86vm.so.? lib/libXxf86vm.so
+        [ -e "/usr/lib32/libXt.so" ] || make_symlink /usr/lib32/libXt.so.? lib/libXt.so
+        [ -e "/usr/lib32/libSM.so" ] || make_symlink /usr/lib32/libSM.so.? lib/libSM.so
+        [ -e "/usr/lib32/libICE.so" ] || make_symlink /usr/lib32/libICE.so.? lib/libICE.so
+        [ -e "/usr/lib32/libstdc++.so" ] || make_symlink /usr/lib32/libstdc++.so.6 lib/libstdc++.so
+        [ -e "/usr/lib32/libgthread-2.0.so" ] || make_symlink /usr/lib32/libgthread-2.0.so.* lib/libgthread-2.0.so
+        [ -e "/usr/lib32/libGLU.so" ] || make_symlink /usr/lib32/libGLU.so.? lib/libGLU.so
+        [ -e "/usr/lib32/libssl.so" ] || make_symlink /usr/lib32/libssl.so.* lib/libssl.so
+        [ -e "/usr/lib32/libcrypto.so" ] || make_symlink /usr/lib32/libcrypto.so.* lib/libcrypto.so
+        [ -e "/usr/lib32/libglut.so" ] || make_symlink /usr/lib32/libglut.so.* lib/libglut.so
+        [ -e "/usr/lib32/libfreetype.so" ] || make_symlink /usr/lib32/libfreetype.so.? lib/libfreetype.so
+        [ -e "${DIR}/lib/libCg.so" ] || [ -e "/usr/lib32/libCg.so" ] || [ -e "/usr/local/lib32/libCg.so" ] || \
+            user_eval "echo Installing 32-bit Nvidia Cg Toolkit;
+                       cd ${DIR} &&
+                       mkdir temp-extract; cd temp-extract &&
+                       ${CURL_BIN} -o cg-x86.tgz http://developer.download.nvidia.com/cg/Cg_2.2/Cg-2.2_April2009_x86.tgz &&
+                       tar -zxf cg-x86.tgz &&
+                       mv usr/lib/libCg.so ../lib/ &&
+                       (mkdir ../include/Cg || true) &&
+                       mv usr/include/Cg/* ../include/Cg/" && \
+            echo "Cg Toolkit installed."
+    fi
+    clean_dir installed-ogre
+    user_eval "cd ${DIR} &&
+               tar -jxf ogre-v1-6-1.tar.bz2 &&
+               cd ogre &&
+               patch -p0 < ../ogre.patch &&
+               ./bootstrap &&
+               ZZIPLIB_LIBS='${ZZIPLIB_LIBS}' ./configure --disable-ogre-demos --enable-threading=semi --with-boost="${DIR}/installed-boost" --prefix=${DIR} LDFLAGS='-L${DIR}/lib -L${DIR}/installed-boost/lib -Wl,--rpath -Wl,${DIR}/installed-boost/lib' CXXFLAGS=-I${DIR}/include &&
+               make $NUM_PROCS &&
+               make install" && \
+    make_symlink ogre installed-ogre || \
+    FAILED="$FAILED ogre"
+fi
+
+################################################################################################################################
+# Install Mono
+################################################################################################################################
+
+MONO_INSTALLED=false
+if [[ -n "$INSTALLED_MONO" ]] ; then
+    make_symlink $INSTALLED_MONO installed-mono
+elif $WITH_MONO ; then
+    echo "Installing MONO..."
+    clean_dir installed-mono
+    MONOSUCCESS=true
+    user_eval "cd ${DIR} && tar -jxf mono-2.4.tar.bz2" || MONOSUCCESS=false
+    if $MONOSUCCESS && $FORCE_32BIT; then
+        user_eval "cd ${DIR} && cp glibconfig-i386.h mono-2.4/glibconfig.h" || MONOSUCCESS=false
+    fi
+    if $MONOSUCCESS; then
+        user_eval "cd mono-2.4 &&
+               ./configure --prefix=${DIR}/installed-mono --disable-nls &&
+               make &&
+               make install" || MONOSUCCESS=false
+    fi
+    if $MONOSUCCESS && $FORCE_32BIT; then
+        user_eval "cd ${DIR} && cp glibconfig-i386.h include/glibconfig.h" || MONOSUCCESS=false
+    fi
+    if [ $MONOSUCCESS = false ]; then
+        FAILED="$FAILED mono"
+    fi
+fi
+
+################################################################################################################################
+# Install DotNet-Protobufs
+################################################################################################################################
+user_eval "cd ${DIR} && unzip -o IronPython-2.0.1.zip";
+
+if [[ -n "$INSTALLED_PROTOBUFS" ]] ; then
+    user_eval "mkdir ${DIR}/installed-protobufs;mkdir ${DIR}/installed-protobufs/bin"
+    make_symlink $INSTALLED_PROTOBUFS/lib installed-protobufs/lib
+    make_symlink $INSTALLED_PROTOBUFS/bin/protoc installed-protobufs/bin/protoc
+    make_symlink $INSTALLED_PROTOBUFS/include installed-protobufs/include
+    user_eval "cd ${DIR} && tar -zxf dotnet-protobufs-8be61a3c8d47c31b277aa0d8b35d55c503fa414c.tar.gz"
+elif $WITH_PROTOBUFS; then
+    user_eval "cd ${DIR} && \
+               tar -zxf protobuf-2.2.0.tar.gz && \
+               cd protobuf-2.2.0 && \
+               ./configure --prefix=${DIR}/installed-protobufs && \
+               make $NUM_PROCS && \
+               make install && \
+               cd ${DIR} && \
+               tar -zxf dotnet-protobufs-*.tar.gz " || \
+    FAILED="$FAILED protobufs"
+# now this is in the makefile thanks to makefile_am_fix.patch              
+fi
+
+################################################################################################################################
+# Google Chromium
+################################################################################################################################
+
+if $WITH_CHROMIUM || $WITH_CHROMIUMDEPS; then
+    if $USE_ROOT ; then
+      echo "Installing Chromium Prerequisites. Package listing is from:"
+      echo "http://code.google.com/p/chromium/wiki/LinuxBuildInstructionsPrerequisites"
+      case "$DISTRO" in
+        debian )
+            apt-get install subversion pkg-config python ruby perl g++ g++-multilib
+            apt-get install bison flex gperf libnss3-dev libnspr4-dev libgtk2.0-dev libnspr4-0d libasound2-dev
+            apt-get install msttcorefonts libgconf2-dev libcairo2-dev libdbus-1-dev
+            apt-get install liborbit2-dev libpopt-dev orbit2 
+            apt-get install libnss3-dev
+            ;;
+        fedora )
+            yum install subversion pkgconfig python perl ruby gcc-c++ bison \
+                        flex gperf nss-devel nspr-devel gtk2-devel.i386 glib2-devel.i386 \
+                        freetype-devel.i386 atk-devel.i386 pango-devel.i386 cairo-devel.i386 \
+                        fontconfig-devel.i386 GConf2-devel.i386 dbus-devel.i386 alsa-lib-devel
+            rpm --force -Uvh /var/cache/yum/updates/packages/pango-devel-1.22.3-1.fc10.i386.rpm
+            ;;
+      esac
+
+
+      if $FORCE_32BIT; then
+        # make sure /usr/local/lib32 exists
+        if ! [ -e /usr/local/lib32 ]; then
+          mkdir /usr/local/lib32
+        fi
+        if ! [ -e /usr/lib32/libnss3.so -o -e /usr/local/lib32/libnss3.so ] ; then
+          #------------from google's script
+          mkdir -p /usr/local/lib32
+          find_curl # make sure curl is available
+          for deb in nspr/libnspr4-0d_4.7.1~beta2-0ubuntu1_i386.deb \
+                     nss/libnss3-1d_3.12.0~beta3-0ubuntu1_i386.deb \
+                     sqlite3/libsqlite3-0_3.4.2-2_i386.deb; do
+            WORKDIR=$(mktemp -d -p /tmp)
+            pushd ${WORKDIR}
+            letter=$(echo ${deb} | sed -e "s/^\\(.\\).*$/\\1/")
+            user_eval "${CURL_BIN} -O http://mirrors.kernel.org/ubuntu/pool/main/${letter}/${deb}"
+            ar x $(basename ${deb})
+            tar xf data.tar.gz
+            for lib in usr/lib/* ; do
+              libbase=$(basename ${lib})
+              mv ${lib} /usr/local/lib32/${libbase}
+              so=$(echo ${libbase} | sed -e "s/^\\(.*\\.so\\)\\..*$/\\1/")
+              if [ ${so} != ${libbase} ] ; then
+                ln -s -f ${libbase} /usr/local/lib32/${so}
+              fi
+            done
+            popd
+            rm -rf ${WORKDIR}
+          done
+          #-------------------------
+        fi
+      
+
+        #ln -s ../local/lib32/libnss3.so /usr/lib32/
+        #ln -s ../local/lib32/libnspr4.so /usr/lib32/
+        #ln -s ../local/lib32/libnssutil3.so /usr/lib32/
+        #ln -s ../local/lib32/libplc4.so /usr/lib32/
+        #ln -s ../local/lib32/libplds4.so /usr/lib32/
+        #ln -s ../local/lib32/libsmime3.so /usr/lib32/
+        #ln -s ../local/lib32/libsqlite3.so /usr/lib32/
+        #ln -s ../local/lib32/libssl3.so /usr/lib32/
+        ln -s /usr/lib32/libcrypto.so.* /usr/local/lib32/libcrypto.so
+        ln -s /usr/lib32/libssl.so.* /usr/local/lib32/libssl.so
+        ln -s /usr/lib32/libgtk-x11-2.0.so.? /usr/local/lib32/libgtk-x11-2.0.so 
+        ln -s /usr/lib32/libgdk-x11-2.0.so.? /usr/local/lib32/libgdk-x11-2.0.so 
+        ln -s /usr/lib32/libgdk_pixbuf-2.0.so.? /usr/local/lib32/libgdk_pixbuf-2.0.so 
+        ln -s /usr/lib32/libatk-1.0.so.? /usr/local/lib32/libatk-1.0.so 
+        for lib in gio-2.0.so.0 gdk-x11-2.0.so.0 atk-1.0.so.0 gdk_pixbuf-2.0.so.0 \
+           pangocairo-1.0.so.0 pango-1.0.so.0 pangoft2-1.0.so.0 gthread-2.0.so.0 glib-2.0.so.0 \
+           gobject-2.0.so.0 gmodule-2.0.so.0 glib-2.0.so.0 gtk-x11-2.0.so.0 \
+           cairo.so.2 freetype.so.6 z.so.1 fontconfig.so.1 \
+           X11.so.6 Xrender.so.1 Xext.so.6 gconf-2.so.4 asound.so.2; do
+          so=$(echo ${lib} | sed -e "s/^\\(.*\\.so\\)\\..*$/\\1/")
+          ln -s /usr/lib32/lib$lib /usr/local/lib32/lib$so
+        done
+      fi
+    fi
+    user_eval "cd ${DIR}; mkdir -p ch" || true
+    if [ \! -e ch/depot_tools ]; then
+      user_eval "cd ${DIR}/ch &&
+                 svn co http://src.chromium.org/svn/trunk/tools/depot_tools/"
+    fi
+fi
+if $WITH_CHROMIUM; then
+    echo "Installing Chromium... DUN dunn dunnnnn"
+    echo "As of October 2008, it takes about three gigabytes of disk space to install and build the source tree."
+    echo "Hit Ctrl-C if you are going to run out of space, so you don't end up with truncated objects."
+    clean_dir installed-chromium
+    if [ \! -e ch/c ]; then
+      user_eval "cd ${DIR}/ch && 
+               export PATH=\"${DIR}/ch/depot_tools:${PATH}\" &&
+               mkdir -p ${DIR}/ch/c &&
+               gclient config http://src.chromium.org/svn/trunk/src "'
+               sed -e "s/\"src\/native_client/#\"src\/native_client/" .gclient > .gclient-bak ; mv .gclient-bak .gclient ';
+    fi
+    if [ x"${CHROMIUM_REV}" = x ]; then
+      CHROMIUM_REV=27764
+    fi
+    if [ x"${CHROMIUM_DEBUG}" = xtrue ]; then
+      echo "*** Building Chromium in Debug mode"
+      MAKEFLAGS=" BUILDTYPE=Debug"
+      OUTDIR=Debug
+    else
+      echo "Building Chromium in Release. export CHROMIUM_DEBUG=true for debug mode."
+      MAKEFLAGS=" BUILDTYPE=Release"
+      OUTDIR=Release
+    fi
+    if [ x"$platform" = x"x86_64" ]; then
+      CHROME_PLATFORM=x64
+    else
+      CHROME_PLATFORM=x86
+    fi
+    if $FORCE_32BIT; then
+        CHROME_PLATFORM=x86
+    fi
+    if [ -e ch/c ]; then
+      user_eval "cd ${DIR}/ch;
+                 export PATH=\"${DIR}/ch/depot_tools:${PATH}\";
+                 cd c; 
+                 gclient sync --force --revision src@${CHROMIUM_REV} &&
+                 ( patch -N -p0 < ${DIR}/chromium-mainthread.patch || true ) &&
+                 cd src && ( patch -N -p0 < ${DIR}/chromium_sandbox_pic.patch || true ) && cd .. &&
+                 export CHROMIUM_ROOT="'"$PWD"'" &&
+                 export CXX='g++ -fPIC'
+                 export CCC='gcc -fPIC'
+                 CXX='g++ -fPIC' CC='gcc -fPIC' GYP_GENERATORS=make GYP_DEFINES=target_arch=$CHROME_PLATFORM ./src/build/gyp_chromium &&
+                 cd src &&
+                 CXX='g++ -fPIC' CC='gcc -fPIC' make -r $NUM_PROCS $MAKEFLAGS chrome" && \
+      make_symlink ch/c/src/sconsbuild/$OUTDIR installed-chromium && \
+      echo ${OUTDIR} > ch/compilemode.txt || \
+      export FAILED="$FAILED chromium"
+    else
+      export FAILED="$FAILED chromium"
+    fi
+fi
+
+if $WITH_AWESOMIUM; then
+    echo "Installing Awesomium"
+    clean_dir installed-awesomium
+    user_eval "cd ../externals/awesomium/Awesomium/src &&
+               make clean &&
+               make ${NUM_PROCS} CHROMIUMDIR=${DIR}/ch/c CHROMIUMMODE=`cat ch/compilemode.txt`" && \
+    make_symlink ../externals/awesomium/Awesomium installed-awesomium || \
+    FAILED="$FAILED awesomium"
+fi
+
+# Install OpenCollada
+
+if [[ -n "$INSTALLED_OPENCOLLADA" ]] ; then
+    make_symlink $INSTALLED_OPENCOLLADA installed-opencollada
+elif $WITH_OPENCOLLADA ; then
+    echo "Installing OpenCollada . . ."
+    clean_dir installed-opencollada
+    user_eval "cd ${DIR} &&
+               rm -rf opencollada/Externals/LibXML &&
+               svn co -r605 http://opencollada.googlecode.com/svn/trunk opencollada &&
+               cd opencollada &&
+               bash scripts/unixbuild.sh ${DIR}/installed-opencollada" || \
+    FAILED="$FAILED opencollada"
+fi
+
+################################################################################################################################
+# Yahoo UI Library
+################################################################################################################################
+
+echo "Installing YUI..."
+if [[ -n "$INSTALLED_YUI" ]] ; then
+    make_symlink $INSTALLED_YUI installed-yui
+elif $WITH_YUI; then
+    echo "Installing YUI..."
+    unzip -o machindependencies/yui.2.7.0b.zip && \
+    make_symlink yui installed-yui || \
+    FAILED="$FAILED yui"
+fi
+
+################################################################################################################################
+# Finish
+################################################################################################################################
+
+if ! [ x = x"$FAILED" ]; then
+    for FAILITEM in $FAILED; do
+        echo CLEANING $FAILITEM
+        clean_dir "installed-$FAILITEM"
+    done
+    echo "Installation of $FAILED has failed."
+    exit 1
+fi
+
+exit 0
