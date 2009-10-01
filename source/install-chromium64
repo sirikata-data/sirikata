@@ -791,6 +791,7 @@ if $WITH_CHROMIUM; then
       user_eval "cd ${DIR}/ch && 
                export PATH=\"${DIR}/ch/depot_tools:${PATH}\" &&
                mkdir -p ${DIR}/ch/c &&
+               cd ${DIR}/ch/c &&
                gclient config http://src.chromium.org/svn/trunk/src "'
                sed -e "s/\"src\/native_client/#\"src\/native_client/" .gclient > .gclient-bak ; mv .gclient-bak .gclient ';
     fi
@@ -807,24 +808,23 @@ if $WITH_CHROMIUM; then
       OUTDIR=Release
     fi
     if [ x"$platform" = x"x86_64" ]; then
-      CHROME_PLATFORM=x64
+      CHROME_PLATFORM="GYP_DEFINES=target_arch=x64"
     else
-      CHROME_PLATFORM=x86
+      CHROME_PLATFORM=
     fi
     if $FORCE_32BIT; then
-        CHROME_PLATFORM=x86
+        CHROME_PLATFORM=
     fi
     if [ -e ch/c ]; then
-      user_eval "cd ${DIR}/ch;
-                 export PATH=\"${DIR}/ch/depot_tools:${PATH}\";
-                 cd c; 
+      user_eval "cd ${DIR}/ch/c &&
+                 export PATH=\"${DIR}/ch/depot_tools:${PATH}\" &&
                  gclient sync --force --revision src@${CHROMIUM_REV} &&
                  ( patch -N -p0 < ${DIR}/chromium-mainthread.patch || true ) &&
                  cd src && ( patch -N -p0 < ${DIR}/chromium_sandbox_pic.patch || true ) && cd .. &&
                  export CHROMIUM_ROOT="'"$PWD"'" &&
                  export CXX='g++ -fPIC'
                  export CCC='gcc -fPIC'
-                 CXX='g++ -fPIC' CC='gcc -fPIC' GYP_GENERATORS=make GYP_DEFINES=target_arch=$CHROME_PLATFORM ./src/build/gyp_chromium &&
+                 CXX='g++ -fPIC' CC='gcc -fPIC' GYP_GENERATORS=make $CHROME_PLATFORM ./src/build/gyp_chromium &&
                  cd src &&
                  CXX='g++ -fPIC' CC='gcc -fPIC' make -r $NUM_PROCS $MAKEFLAGS chrome" && \
       make_symlink ch/c/src/sconsbuild/$OUTDIR installed-chromium && \
