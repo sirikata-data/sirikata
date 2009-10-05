@@ -718,12 +718,12 @@ if $WITH_CHROMIUM || $WITH_CHROMIUMDEPS; then
             ;;
       esac
 
-      # make sure /usr/local/lib32 exists
-      if ! [ -e /usr/local/lib32 ]; then
-        mkdir /usr/local/lib32
-      fi
 
       if $FORCE_32BIT; then
+        # make sure /usr/local/lib32 exists
+        if ! [ -e /usr/local/lib32 ]; then
+          mkdir /usr/local/lib32
+        fi
         if ! [ -e /usr/lib32/libnss3.so -o -e /usr/local/lib32/libnss3.so ] ; then
           #------------from google's script
           mkdir -p /usr/local/lib32
@@ -750,37 +750,36 @@ if $WITH_CHROMIUM || $WITH_CHROMIUMDEPS; then
           done
           #-------------------------
         fi
-      fi
+      
 
-      #ln -s ../local/lib32/libnss3.so /usr/lib32/
-      #ln -s ../local/lib32/libnspr4.so /usr/lib32/
-      #ln -s ../local/lib32/libnssutil3.so /usr/lib32/
-      #ln -s ../local/lib32/libplc4.so /usr/lib32/
-      #ln -s ../local/lib32/libplds4.so /usr/lib32/
-      #ln -s ../local/lib32/libsmime3.so /usr/lib32/
-      #ln -s ../local/lib32/libsqlite3.so /usr/lib32/
-      #ln -s ../local/lib32/libssl3.so /usr/lib32/
-      ln -s /usr/lib32/libcrypto.so.* /usr/local/lib32/libcrypto.so
-      ln -s /usr/lib32/libssl.so.* /usr/local/lib32/libssl.so
-      ln -s /usr/lib32/libgtk-x11-2.0.so.? /usr/local/lib32/libgtk-x11-2.0.so 
-      ln -s /usr/lib32/libgdk-x11-2.0.so.? /usr/local/lib32/libgdk-x11-2.0.so 
-      ln -s /usr/lib32/libgdk_pixbuf-2.0.so.? /usr/local/lib32/libgdk_pixbuf-2.0.so 
-      ln -s /usr/lib32/libatk-1.0.so.? /usr/local/lib32/libatk-1.0.so 
-      for lib in gio-2.0.so.0 gdk-x11-2.0.so.0 atk-1.0.so.0 gdk_pixbuf-2.0.so.0 \
+        #ln -s ../local/lib32/libnss3.so /usr/lib32/
+        #ln -s ../local/lib32/libnspr4.so /usr/lib32/
+        #ln -s ../local/lib32/libnssutil3.so /usr/lib32/
+        #ln -s ../local/lib32/libplc4.so /usr/lib32/
+        #ln -s ../local/lib32/libplds4.so /usr/lib32/
+        #ln -s ../local/lib32/libsmime3.so /usr/lib32/
+        #ln -s ../local/lib32/libsqlite3.so /usr/lib32/
+        #ln -s ../local/lib32/libssl3.so /usr/lib32/
+        ln -s /usr/lib32/libcrypto.so.* /usr/local/lib32/libcrypto.so
+        ln -s /usr/lib32/libssl.so.* /usr/local/lib32/libssl.so
+        ln -s /usr/lib32/libgtk-x11-2.0.so.? /usr/local/lib32/libgtk-x11-2.0.so 
+        ln -s /usr/lib32/libgdk-x11-2.0.so.? /usr/local/lib32/libgdk-x11-2.0.so 
+        ln -s /usr/lib32/libgdk_pixbuf-2.0.so.? /usr/local/lib32/libgdk_pixbuf-2.0.so 
+        ln -s /usr/lib32/libatk-1.0.so.? /usr/local/lib32/libatk-1.0.so 
+        for lib in gio-2.0.so.0 gdk-x11-2.0.so.0 atk-1.0.so.0 gdk_pixbuf-2.0.so.0 \
            pangocairo-1.0.so.0 pango-1.0.so.0 pangoft2-1.0.so.0 gthread-2.0.so.0 glib-2.0.so.0 \
            gobject-2.0.so.0 gmodule-2.0.so.0 glib-2.0.so.0 gtk-x11-2.0.so.0 \
            cairo.so.2 freetype.so.6 z.so.1 fontconfig.so.1 \
            X11.so.6 Xrender.so.1 Xext.so.6 gconf-2.so.4 asound.so.2; do
-        so=$(echo ${lib} | sed -e "s/^\\(.*\\.so\\)\\..*$/\\1/")
-        ln -s /usr/lib32/lib$lib /usr/local/lib32/lib$so
-      done
-
+          so=$(echo ${lib} | sed -e "s/^\\(.*\\.so\\)\\..*$/\\1/")
+          ln -s /usr/lib32/lib$lib /usr/local/lib32/lib$so
+        done
+      fi
     fi
-    user_eval "cd ${DIR}; mkdir chromium" || true
-    if [ \! -e chromium/depot_tools ]; then
-      user_eval "cd ${DIR}/chromium &&
-                 wget http://src.chromium.org/svn/trunk/tools/depot_tools.tar.gz &&
-                 tar -zxf depot_tools.tar.gz"
+    user_eval "cd ${DIR}; mkdir -p ch" || true
+    if [ \! -e ch/depot_tools ]; then
+      user_eval "cd ${DIR}/ch &&
+                 svn co http://src.chromium.org/svn/trunk/tools/depot_tools/"
     fi
 fi
 if $WITH_CHROMIUM; then
@@ -788,37 +787,48 @@ if $WITH_CHROMIUM; then
     echo "As of October 2008, it takes about three gigabytes of disk space to install and build the source tree."
     echo "Hit Ctrl-C if you are going to run out of space, so you don't end up with truncated objects."
     clean_dir installed-chromium
-    if [ \! -e chromium/chromium ]; then
-      user_eval "cd ${DIR}/chromium;"' 
-               CHROMIUM_TGZ="`wget http://build.chromium.org/buildbot/archives/chromium_tarball.html -o/dev/null -O- | grep tgz | head -n1 | cut -d '"'\"'"' -f2`" ;
-               echo wget --progress="dot:mega" -c "http://build.chromium.org/buildbot/archives/$CHROMIUM_TGZ" &&
-               wget --progress="dot:mega" -c "http://build.chromium.org/buildbot/archives/$CHROMIUM_TGZ" &&
-               tar -zxf $CHROMIUM_TGZ &&
-               mv home/chrome-svn/tarball/chromium .'
+    if [ \! -e ch/c ]; then
+      user_eval "cd ${DIR}/ch && 
+               export PATH=\"${DIR}/ch/depot_tools:${PATH}\" &&
+               mkdir -p ${DIR}/ch/c &&
+               cd ${DIR}/ch/c &&
+               gclient config http://src.chromium.org/svn/trunk/src "'
+               sed -e "s/\"src\/native_client/#\"src\/native_client/" .gclient > .gclient-bak ; mv .gclient-bak .gclient ';
     fi
     if [ x"${CHROMIUM_REV}" = x ]; then
       CHROMIUM_REV=23522
     fi
     if [ x"${CHROMIUM_DEBUG}" = xtrue ]; then
       echo "*** Building Chromium in Debug mode"
-      HAMMERFLAGS="$HAMMERFLAGS --mode=Debug"
+      MAKEFLAGS=" BUILDTYPE=Debug"
       OUTDIR=Debug
     else
       echo "Building Chromium in Release. export CHROMIUM_DEBUG=true for debug mode."
-      HAMMERFLAGS="$HAMMERFLAGS --mode=Release"
+      MAKEFLAGS=" BUILDTYPE=Release"
       OUTDIR=Release
     fi
-    if [ -e chromium/chromium ] && [ -e chromium/depot_tools ]; then
-      user_eval "cd ${DIR}/chromium;"'
-                 export PATH="$PWD/depot_tools:$PATH";
-                 cd chromium; '"
+    if [ x"$platform" = x"x86_64" ]; then
+      CHROME_PLATFORM="GYP_DEFINES=target_arch=x64"
+    else
+      CHROME_PLATFORM=
+    fi
+    if $FORCE_32BIT; then
+        CHROME_PLATFORM=
+    fi
+    if [ -e ch/c ]; then
+      user_eval "cd ${DIR}/ch/c &&
+                 export PATH=\"${DIR}/ch/depot_tools:${PATH}\" &&
                  gclient sync --force --revision src@${CHROMIUM_REV} &&
                  ( patch -N -p0 < ${DIR}/chromium-mainthread.patch || true ) &&
+                 cd src && ( patch -N -p0 < ${DIR}/chromium_sandbox_pic.patch || true ) && cd .. &&
                  export CHROMIUM_ROOT="'"$PWD"'" &&
-                 cd src/build &&
-                 hammer ${HAMMERFLAGS} chrome" && \
-      make_symlink chromium/chromium/src/sconsbuild/$OUTDIR installed-chromium && \
-      echo ${OUTDIR} > chromium/compilemode.txt || \
+                 export CXX='g++ -fPIC'
+                 export CCC='gcc -fPIC'
+                 CXX='g++ -fPIC' CC='gcc -fPIC' GYP_GENERATORS=make $CHROME_PLATFORM ./src/build/gyp_chromium &&
+                 cd src &&
+                 CXX='g++ -fPIC' CC='gcc -fPIC' make -r $NUM_PROCS $MAKEFLAGS chrome" && \
+      make_symlink ch/c/src/out/$OUTDIR installed-chromium && \
+      echo ${OUTDIR} > ch/compilemode.txt || \
       export FAILED="$FAILED chromium"
     else
       export FAILED="$FAILED chromium"
@@ -830,7 +840,7 @@ if $WITH_AWESOMIUM; then
     clean_dir installed-awesomium
     user_eval "cd ../externals/awesomium/Awesomium/src &&
                make clean &&
-               make ${NUM_PROCS} CHROMIUMDIR=${DIR}/chromium/chromium CHROMIUMMODE=`cat chromium/compilemode.txt`" && \
+               make ${NUM_PROCS} CHROMIUMDIR=${DIR}/ch/c CHROMIUMMODE=`cat ch/compilemode.txt`" && \
     make_symlink ../externals/awesomium/Awesomium installed-awesomium || \
     FAILED="$FAILED awesomium"
 fi
@@ -848,8 +858,8 @@ elif $WITH_OPENCOLLADA ; then
                cd opencollada &&
                bash scripts/unixbuild.sh ${DIR}/installed-opencollada" || \
     FAILED="$FAILED opencollada"
-
 fi
+
 ################################################################################################################################
 # Yahoo UI Library
 ################################################################################################################################

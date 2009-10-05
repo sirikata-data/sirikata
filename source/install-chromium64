@@ -808,12 +808,12 @@ if $WITH_CHROMIUM; then
       OUTDIR=Release
     fi
     if [ x"$platform" = x"x86_64" ]; then
-      CHROME_PLATFORM="GYP_DEFINES=target_arch=x64"
+      CHROME_PLATFORM=x64
     else
-      CHROME_PLATFORM=
+      CHROME_PLATFORM=ia32
     fi
     if $FORCE_32BIT; then
-        CHROME_PLATFORM=
+        CHROME_PLATFORM=ia32
     fi
     if [ -e ch/c ]; then
       user_eval "cd ${DIR}/ch/c &&
@@ -824,7 +824,7 @@ if $WITH_CHROMIUM; then
                  export CHROMIUM_ROOT="'"$PWD"'" &&
                  export CXX='g++ -fPIC'
                  export CCC='gcc -fPIC'
-                 CXX='g++ -fPIC' CC='gcc -fPIC' GYP_GENERATORS=make $CHROME_PLATFORM ./src/build/gyp_chromium &&
+                 CXX='g++ -fPIC' CC='gcc -fPIC' GYP_GENERATORS=make GYP_DEFINES=target_arch=$CHROME_PLATFORM ./src/build/gyp_chromium &&
                  cd src &&
                  CXX='g++ -fPIC' CC='gcc -fPIC' make -r $NUM_PROCS $MAKEFLAGS chrome" && \
       make_symlink ch/c/src/out/$OUTDIR installed-chromium && \
