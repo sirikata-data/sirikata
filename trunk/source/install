@@ -824,11 +824,14 @@ if $WITH_CHROMIUM; then
                  export CHROMIUM_ROOT="'"$PWD"'" &&
                  export CXX='g++ -fPIC'
                  export CCC='gcc -fPIC'
-                 CXX='g++ -fPIC' CC='gcc -fPIC' GYP_GENERATORS=make $CHROME_PLATFORM ./src/build/gyp &&
+                 CXX='g++ -fPIC' CC='gcc -fPIC' GYP_GENERATORS=make $CHROME_PLATFORM ./src/tools/gyp/gyp_chromium &&                 
                  cd src &&
                  CXX='g++ -fPIC' CC='gcc -fPIC' make -r $NUM_PROCS $MAKEFLAGS chrome" && \
       make_symlink ch/c/src/out/$OUTDIR installed-chromium && \
-      echo ${OUTDIR} > ch/compilemode.txt || \
+      echo ${OUTDIR} > ch/compilemode.txt && \
+      make_symlink ch/c/src/out ch/c/src/sconsbuild && \
+      make_symlink ch chromium && \
+      make_symlink chromium/chromium ch/c || \
       export FAILED="$FAILED chromium"
     else
       export FAILED="$FAILED chromium"
