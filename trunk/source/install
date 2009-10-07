@@ -405,7 +405,7 @@ elif $WITH_SDL; then
                patch -p0 < ../SDLatomic.patch &&
                patch -p0 < ../SDLx11keyrepeat.patch &&
                patch -p0 < ../SDLwindowfocus.patch &&
-               make $NUM_PROCS &&
+               make &&
                make install" && \
     make_symlink SDL-1.3.0-4685 installed-sdl || \
     FAILED="$FAILED sdl"
