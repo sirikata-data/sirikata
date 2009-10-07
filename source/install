@@ -826,6 +826,7 @@ if $WITH_CHROMIUM; then
                  export CCC='gcc -fPIC'
                  CXX='g++ -fPIC' CC='gcc -fPIC' GYP_GENERATORS=make $CHROME_PLATFORM ./src/tools/gyp/gyp_chromium &&                 
                  cd src &&
+                 export LD_LIBRARY_PATH=/usr/local/lib32:$LD_LIBRARY_PATH &&
                  CXX='g++ -fPIC' CC='gcc -fPIC' make -r $NUM_PROCS $MAKEFLAGS chrome" && \
       make_symlink ch/c/src/out/$OUTDIR installed-chromium && \
       echo ${OUTDIR} > ch/compilemode.txt && \
