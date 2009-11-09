@@ -2,7 +2,8 @@
 ifeq ($(ARCH),)
 REALARCH=$(shell uname -m)
 ifeq ($(REALARCH),x86_64)
-ARCH=i386
+#ARCH=i386
+ARCH=$(REALARCH)
 else
 ARCH=$(REALARCH)
 endif
@@ -13,9 +14,9 @@ endif
 
 ifneq ($(ARCH),x86_64)
 INSTALLFLAGS+=--force-32bit
+endif
 CHROMIUM_ROOT_DEPS=chromium-root
 AWESOMIUM_DEPS=installed-awesomium
-endif
 
 # Default rule:
 depends: check-architecture optionaldepends
