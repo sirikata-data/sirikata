@@ -318,7 +318,7 @@ function clean_dir {
 ################################################################################################################################
 
 function find_curl {
-    local installed_path="@{DIR}/installed-curl/bin/curl"
+    local installed_path="${DIR}/installed-curl/bin/curl"
     if [[ -e $installed_path ]] ; then
         CURL_BIN=$installed_path
     elif [[ -n `which curl` ]] ; then
@@ -405,7 +405,7 @@ elif $WITH_SDL; then
                patch -p0 < ../SDLatomic.patch &&
                patch -p0 < ../SDLx11keyrepeat.patch &&
                patch -p0 < ../SDLwindowfocus.patch &&
-               make $NUM_PROCS &&
+               make &&
                make install" && \
     make_symlink SDL-1.3.0-4685 installed-sdl || \
     FAILED="$FAILED sdl"
@@ -793,10 +793,10 @@ if $WITH_CHROMIUM; then
                mkdir -p ${DIR}/ch/c &&
                cd ${DIR}/ch/c &&
                gclient config http://src.chromium.org/svn/trunk/src "'
-               sed -e "s/\"src\/native_client/#\".\/src\/native_client/" .gclient > .gclient-bak ; mv .gclient-bak .gclient ';
+               sed -e "s/\"src\/native_client/#\"src\/native_client/" .gclient > .gclient-bak ; mv .gclient-bak .gclient ';
     fi
     if [ x"${CHROMIUM_REV}" = x ]; then
-      CHROMIUM_REV=29571
+      CHROMIUM_REV=23522
     fi
     if [ x"${CHROMIUM_DEBUG}" = xtrue ]; then
       echo "*** Building Chromium in Debug mode"
@@ -808,34 +808,31 @@ if $WITH_CHROMIUM; then
       OUTDIR=Release
     fi
     if [ x"$platform" = x"x86_64" ]; then
-      CHROME_PLATFORM=x64
+      CHROME_PLATFORM="GYP_DEFINES=target_arch=x64"
     else
-      CHROME_PLATFORM=ia32
+      CHROME_PLATFORM=
     fi
     if $FORCE_32BIT; then
-        CHROME_PLATFORM=ia32
+        CHROME_PLATFORM=
     fi
     if [ -e ch/c ]; then
-      user_eval "cd ${DIR}/ch/c && "'
-                 sed -e "s/\"src\/native_client/#\".\/src\/native_client/" .gclient > .gclient-bak && mv .gclient-bak .gclient &&'"
+      user_eval "cd ${DIR}/ch/c &&
                  export PATH=\"${DIR}/ch/depot_tools:${PATH}\" &&
-                 export GYP_GENERATORS=make &&
                  gclient sync --force --revision src@${CHROMIUM_REV} &&
                  ( patch -N -p0 < ${DIR}/chromium-mainthread.patch || true ) &&
                  cd src && ( patch -N -p0 < ${DIR}/chromium_sandbox_pic.patch || true ) && cd .. &&
-                 cd src && ( patch -N -p0 < ${DIR}/chromium_nacl_inline_pic.patch || true ) && cd .. &&
-                 cd src && ( patch -N -p0 < ${DIR}/chromium_transparency_26900.patch || true ) && cd .. &&
-                 cd src && ( patch -N -p0 < ${DIR}/chromium_win32_sandbox_exports.patch || true ) && cd .. &&
-                 cd src && ( patch -N -p0 < ${DIR}/chromium_wmode_opaque.patch || true ) && cd .. &&
                  export CHROMIUM_ROOT="'"$PWD"'" &&
-                 export CXX='g++ -fPIC' &&
-                 export CC='gcc -fPIC' &&
-                 export GYP_DEFINES=target_arch=$CHROME_PLATFORM &&
-                 gclient runhooks --force &&
+                 export CXX='g++ -fPIC'
+                 export CCC='gcc -fPIC'
+                 CXX='g++ -fPIC' CC='gcc -fPIC' GYP_GENERATORS=make $CHROME_PLATFORM ./src/tools/gyp/gyp_chromium &&                 
                  cd src &&
+                 export LD_LIBRARY_PATH=/usr/local/lib32:$LD_LIBRARY_PATH &&
                  CXX='g++ -fPIC' CC='gcc -fPIC' make -r $NUM_PROCS $MAKEFLAGS chrome" && \
       make_symlink ch/c/src/out/$OUTDIR installed-chromium && \
-      echo ${OUTDIR} > ch/compilemode.txt || \
+      echo ${OUTDIR} > ch/compilemode.txt && \
+      make_symlink ch/c/src/out ch/c/src/sconsbuild && \
+      make_symlink ch chromium && \
+      make_symlink chromium/chromium ch/c || \
       export FAILED="$FAILED chromium"
     else
       export FAILED="$FAILED chromium"
