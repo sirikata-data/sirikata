@@ -1,0 +1,1 @@
+Dependencies for Sirikata main tree http://github.com/sirikata/sirikata/tree Website at http://sirikata.com
